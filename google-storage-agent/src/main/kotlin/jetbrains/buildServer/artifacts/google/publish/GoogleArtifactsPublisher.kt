@@ -61,7 +61,7 @@ class GoogleArtifactsPublisher(dispatcher: EventDispatcher<AgentLifeCycleListene
 
                 filesToPublish.forEach { (file, path) ->
                     val filePath = if (path.isEmpty()) file.name else "$path$SLASH${file.name}"
-                    val blobName = pathPrefix + filePath
+                    val blobName = "$pathPrefix$SLASH$filePath"
 
                     FileInputStream(file).use {
                         bucket.create(blobName, it)

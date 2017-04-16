@@ -16,15 +16,15 @@
         <th class="noBorder"><label for="${params.accessKey}">JSON private key: <l:star/></label></th>
         <td>
             <div class="posRel">
-                <props:passwordProperty name="${params.accessKey}" className="longField"/>
+                <props:multilineProperty expanded="true" name="${params.accessKey}"
+                                         className="longField" note=""
+                                         rows="5" cols="49" linkTitle="Edit JSON key"/>
             </div>
             <span class="error" id="error_${params.accessKey}"></span>
             <span class="smallNote">Specify the JSON private key.
-            <bs:help urlPrefix="https://cloud.google.com/storage/docs/"
-                     file="authentication"
-                     anchor="generating-a-private-key"/>
+            <bs:help urlPrefix="https://cloud.google.com/storage/docs/authentication#generating-a-private-key"
+                     file=""/>
             </span>
-            https://cloud.google.com/storage/docs/authentication#generating-a-private-key
         </td>
     </tr>
 </l:settingsGroup>

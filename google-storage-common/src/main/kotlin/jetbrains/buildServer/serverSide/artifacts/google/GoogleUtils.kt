@@ -7,6 +7,8 @@
 
 package jetbrains.buildServer.serverSide.artifacts.google
 
+import com.google.api.client.googleapis.util.Utils
+import com.google.api.client.json.GenericJson
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.cloud.storage.Bucket
 import com.google.cloud.storage.Storage
@@ -23,6 +25,11 @@ object GoogleUtils {
     fun getStorage(parameters: Map<String, String>): Storage {
         val builder = StorageOptions.newBuilder()
         parameters[GoogleConstants.PARAM_ACCESS_KEY]?.trim()?.byteInputStream()?.use {
+            val factory = Utils.getDefaultJsonFactory()
+            val parser = factory.createJsonParser(it)
+            val json = parser.parse(GenericJson::class.java)
+            builder.setProjectId(json[PROJECT_ID] as String)
+            it.reset()
             builder.setCredentials(GoogleCredentials.fromStream(it))
         }
 
@@ -34,4 +41,6 @@ object GoogleUtils {
         val bucketName = parameters[GoogleConstants.PARAM_BUCKET_NAME]?.trim()
         return storage.get(bucketName, Storage.BucketGetOption.fields(*emptyArray()))
     }
+
+    private val PROJECT_ID = "project_id"
 }
