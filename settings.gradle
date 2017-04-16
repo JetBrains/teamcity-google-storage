@@ -1,0 +1,3 @@
+rootProject.name='teamcity-google-storage'
+
+include 'google-storage-agent', 'google-storage-common', 'google-storage-server'

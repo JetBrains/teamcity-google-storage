@@ -1,0 +1,21 @@
+plugins {
+    id 'com.github.rodm.teamcity-agent' version "0.11"
+}
+
+teamcity {
+    version = teamcityVersion
+    descriptor {
+        pluginDeployment {
+            useSeparateClassloader = true
+        }
+    }
+}
+
+dependencies {
+    compile project(':google-storage-common')
+    compile "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
+    compile "com.google.cloud:google-cloud-storage:0.11.0-beta"
+}
+
+agentPlugin.version = null
+agentPlugin.baseName = projectIds.artifact

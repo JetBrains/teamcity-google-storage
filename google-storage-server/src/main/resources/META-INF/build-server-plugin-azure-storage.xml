@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+<beans default-autowire="constructor">
+    <bean class="jetbrains.buildServer.serverSide.artifacts.google.GoogleStorageType"/>
+    <bean class="jetbrains.buildServer.serverSide.artifacts.google.GoogleArtifactContentProvider"/>
+    <bean class="jetbrains.buildServer.serverSide.artifacts.google.cleanup.GoogleCleanupExtension"/>
+    <bean class="jetbrains.buildServer.serverSide.artifacts.google.web.GoogleSettingsController"/>
+    <bean class="jetbrains.buildServer.serverSide.artifacts.google.web.GoogleArtifactDownloadProcessor"/>
+</beans>

@@ -1,0 +1,26 @@
+plugins {
+    id 'com.github.rodm.teamcity-server' version "0.11"
+}
+
+teamcity {
+    version = teamcityVersion
+    server {
+        descriptor = project.file('teamcity-plugin.xml')
+        tokens = [Plugin_Version: project.version]
+    }
+}
+
+dependencies {
+    compile project(':google-storage-common')
+    compile "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
+    provided "org.jetbrains.teamcity:server-api:${teamcityVersion}"
+    provided "org.jetbrains.teamcity.internal:server:${teamcityVersion}"
+
+    agent project(path: ':google-storage-agent', configuration: 'plugin')
+}
+
+serverPlugin.version = null
+serverPlugin.baseName = projectIds.artifact
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
