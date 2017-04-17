@@ -36,6 +36,13 @@ class GoogleStorageType(registry: ArtifactStorageTypeRegistry,
             GoogleConstants.PARAM_ACCESS_KEY.apply {
                 if (it[this].isNullOrEmpty()) {
                     invalidProperties.add(InvalidProperty(this, EMPTY_VALUE))
+                } else {
+                    try {
+                        GoogleUtils.getStorage(it)
+                    } catch (e: Throwable) {
+                        val message = GoogleUtils.getExceptionMessage(e)
+                        invalidProperties.add(InvalidProperty(this, message))
+                    }
                 }
             }
 

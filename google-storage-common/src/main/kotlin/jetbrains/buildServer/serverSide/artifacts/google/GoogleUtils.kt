@@ -7,6 +7,7 @@
 
 package jetbrains.buildServer.serverSide.artifacts.google
 
+import com.fasterxml.jackson.core.JsonParseException
 import com.google.api.client.googleapis.util.Utils
 import com.google.api.client.json.GenericJson
 import com.google.auth.oauth2.GoogleCredentials
@@ -28,7 +29,10 @@ object GoogleUtils {
             val factory = Utils.getDefaultJsonFactory()
             val parser = factory.createJsonParser(it)
             val json = parser.parse(GenericJson::class.java)
-            builder.setProjectId(json[PROJECT_ID] as String)
+            json[PROJECT_ID]?.let {
+                builder.setProjectId(it as String)
+            }
+
             it.reset()
             builder.setCredentials(GoogleCredentials.fromStream(it))
         }
@@ -41,6 +45,23 @@ object GoogleUtils {
         val bucketName = parameters[GoogleConstants.PARAM_BUCKET_NAME]?.trim()
         return storage.get(bucketName, Storage.BucketGetOption.fields(*emptyArray()))
     }
+
+    fun getExceptionMessage(e: Throwable) = when (e) {
+        is JsonParseException -> {
+            "Invalid key format"
+        }
+        is IllegalArgumentException -> {
+            if (e.message?.contains("project ID is required") ?: false) {
+                "Invalid key: no project id"
+            } else {
+                "Invalid key: ${e.message}"
+            }
+        }
+        else -> {
+            "Invalid key: ${e.message}"
+        }
+    }
+
 
     private val PROJECT_ID = "project_id"
 }

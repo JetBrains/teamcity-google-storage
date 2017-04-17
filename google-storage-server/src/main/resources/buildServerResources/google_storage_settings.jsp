@@ -20,10 +20,11 @@
                                          className="longField" note=""
                                          rows="5" cols="49" linkTitle="Edit JSON key"/>
             </div>
-            <span class="error" id="error_${params.accessKey}"></span>
             <span class="smallNote">Specify the JSON private key.
-            <bs:help urlPrefix="https://cloud.google.com/storage/docs/authentication#generating-a-private-key"
-                     file=""/>
+                <bs:help urlPrefix="https://cloud.google.com/storage/docs/authentication#generating-a-private-key"
+                         file=""/><br/>
+                You need to grant a roles with a following permissions: <em>storage.buckets.list, storage.objects.*<em>
+                        <bs:help urlPrefix="https://cloud.google.com/storage/docs/access-control/iam#roles" file=""/>
             </span>
         </td>
     </tr>
@@ -40,6 +41,7 @@
                         <props:option value="${bucket}"><c:out value="${bucket}"/></props:option>
                     </c:if>
                 </props:selectProperty>
+                <i class="icon-refresh" title="Reload buckets" id="buckets-refresh"></i>
             </div>
             <span class="smallNote">Specify the bucket name where artifacts will be published.<br/>
                 You can override default path prefix via build parameter <em><c:out value="${params.pathPrefix}"/></em>
@@ -60,6 +62,7 @@
 
     function loadBuckets() {
         var parameters = BS.EditStorageForm.serializeParameters();
+        var $refreshButton = $j('#buckets-refresh').addClass('icon-spin');
         $j.post(window['base_uri'] + '${params.containersPath}', parameters)
             .then(function (response) {
                 var $response = $j(response);
@@ -78,14 +81,23 @@
                     $selector.append($j("<option></option>")
                         .attr("value", text).text(text));
                 });
-                $selector.val(value);
+                if (value) {
+                    $selector.val(value);
+                }
+            })
+            .always(function () {
+                $refreshButton.removeClass('icon-spin');
             });
     }
+
     var selectors = BS.Util.escapeId('${params.accessKey}');
     $j(document).on('change', selectors, function () {
         loadBuckets();
     });
     $j(document).on('ready', function () {
+        loadBuckets();
+    });
+    $j(document).on('click', '#buckets-refresh', function () {
         loadBuckets();
     });
 </script>

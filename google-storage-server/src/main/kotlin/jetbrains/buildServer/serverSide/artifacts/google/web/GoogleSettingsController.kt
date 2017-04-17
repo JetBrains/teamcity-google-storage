@@ -45,7 +45,7 @@ class GoogleSettingsController(server: SBuildServer,
             }
             xmlResponse.addContent(bucketsElement)
         } catch (e: Throwable) {
-            val message = e.message
+            val message = GoogleUtils.getExceptionMessage(e)
             errors.addError(GoogleConstants.PARAM_ACCESS_KEY, message)
         }
 
