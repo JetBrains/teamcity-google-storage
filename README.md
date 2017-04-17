@@ -19,7 +19,7 @@ When installed and configured, the plugin:
  
 # Download
 
-You can [download the plugin](https://plugins.jetbrains.com/teamcity) and install it as [an additional TeamCity plugin](https://confluence.jetbrains.com/display/TCDL/Installing+Additional+Plugins).
+You can [download the plugin](https://plugins.jetbrains.com/plugin/9634-google-artifact-storage) and install it as [an additional TeamCity plugin](https://confluence.jetbrains.com/display/TCDL/Installing+Additional+Plugins).
 
 # Compatibility
 
