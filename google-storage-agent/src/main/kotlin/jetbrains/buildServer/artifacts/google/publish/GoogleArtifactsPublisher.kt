@@ -22,6 +22,7 @@ import jetbrains.buildServer.util.EventDispatcher
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
+import java.net.URI
 
 class GoogleArtifactsPublisher(dispatcher: EventDispatcher<AgentLifeCycleListener>,
                                private val helper: AgentArtifactHelper,
@@ -60,7 +61,7 @@ class GoogleArtifactsPublisher(dispatcher: EventDispatcher<AgentLifeCycleListene
                 val pathPrefix = getPathPrefixProperty(build)
 
                 filesToPublish.forEach { (file, path) ->
-                    val filePath = if (path.isEmpty()) file.name else "$path$SLASH${file.name}"
+                    val filePath = preparePath(path, file)
                     val blobName = "$pathPrefix$SLASH$filePath"
 
                     FileInputStream(file).use {
@@ -84,6 +85,17 @@ class GoogleArtifactsPublisher(dispatcher: EventDispatcher<AgentLifeCycleListene
         }
 
         return filesToPublish.size
+    }
+
+    private fun preparePath(path: String, file: File): String {
+        if (path.startsWith(".."))
+            throw IOException("Attempting to publish artifact outside of build artifacts directory. Specified target path: \"$path\"")
+
+        return if (path.isEmpty()) {
+            file.name
+        } else {
+            URI("$path$SLASH${file.name}").normalize().path
+        }
     }
 
     override fun getType() = GoogleConstants.STORAGE_TYPE
