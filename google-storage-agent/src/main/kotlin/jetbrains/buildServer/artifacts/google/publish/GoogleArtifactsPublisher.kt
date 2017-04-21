@@ -19,10 +19,10 @@ import jetbrains.buildServer.serverSide.artifacts.google.GoogleConstants.PATH_PR
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleConstants.PATH_PREFIX_SYSTEM_PROPERTY
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleUtils
 import jetbrains.buildServer.util.EventDispatcher
+import jetbrains.buildServer.util.FileUtil
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
-import java.net.URI
 
 class GoogleArtifactsPublisher(dispatcher: EventDispatcher<AgentLifeCycleListener>,
                                private val helper: AgentArtifactHelper,
@@ -88,13 +88,10 @@ class GoogleArtifactsPublisher(dispatcher: EventDispatcher<AgentLifeCycleListene
     }
 
     private fun preparePath(path: String, file: File): String {
-        if (path.startsWith(".."))
-            throw IOException("Attempting to publish artifact outside of build artifacts directory. Specified target path: \"$path\"")
-
         return if (path.isEmpty()) {
             file.name
         } else {
-            URI("$path$SLASH${file.name}").normalize().path
+            FileUtil.normalizeRelativePath("$path$SLASH${file.name}")
         }
     }
 
