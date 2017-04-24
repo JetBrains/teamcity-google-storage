@@ -20,7 +20,7 @@ object GoogleUtils {
     fun getPathPrefix(properties: Map<String, String>) = properties[GoogleConstants.PATH_PREFIX_ATTR]
 
     fun getArtifactPath(properties: Map<String, String>, path: String): String {
-        return getPathPrefix(properties) + '/' + path
+        return getPathPrefix(properties)?.trimEnd(FORWARD_SLASH) + FORWARD_SLASH + path
     }
 
     fun getStorage(parameters: Map<String, String>): Storage {
@@ -62,6 +62,6 @@ object GoogleUtils {
         }
     }
 
-
     private val PROJECT_ID = "project_id"
+    private val FORWARD_SLASH = '/'
 }

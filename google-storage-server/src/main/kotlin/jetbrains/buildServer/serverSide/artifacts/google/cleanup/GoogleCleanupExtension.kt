@@ -33,12 +33,14 @@ class GoogleCleanupExtension(private val helper: ServerArtifactHelper,
     override fun cleanupBuildsData(cleanupContext: BuildCleanupContext) {
         for (build in cleanupContext.builds) {
             val artifactsInfo = helper.getArtifactList(build) ?: continue
-            val pathPrefix = GoogleUtils.getPathPrefix(artifactsInfo.commonProperties) ?: continue
+            val properties = artifactsInfo.commonProperties
+            val pathPrefix = GoogleUtils.getPathPrefix(properties) ?: continue
 
             val patterns = getPatternsForBuild(cleanupContext as BuildCleanupContextEx, build)
             val toDelete = getPathsToDelete(artifactsInfo, patterns).map {
-                "$pathPrefix/$it"
+                GoogleUtils.getArtifactPath(properties, it)
             }
+
             if (toDelete.isEmpty()) continue
 
             val parameters = settingsProvider.getStorageSettings(build)
