@@ -23,6 +23,7 @@ import jetbrains.buildServer.util.FileUtil
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
+import java.net.URLConnection
 
 class GoogleArtifactsPublisher(dispatcher: EventDispatcher<AgentLifeCycleListener>,
                                private val helper: AgentArtifactHelper,
@@ -63,9 +64,14 @@ class GoogleArtifactsPublisher(dispatcher: EventDispatcher<AgentLifeCycleListene
                 filesToPublish.forEach { (file, path) ->
                     val filePath = preparePath(path, file.name)
                     val blobName = preparePath(pathPrefix, filePath)
+                    val contentType = URLConnection.guessContentTypeFromName(file.name)
 
                     FileInputStream(file).use {
-                        bucket.create(blobName, it)
+                        if (contentType == null) {
+                            bucket.create(blobName, it)
+                        } else {
+                            bucket.create(blobName, it, contentType)
+                        }
                         val length = file.length()
                         val artifact = ArtifactDataInstance.create(filePath, length)
                         publishedArtifacts.add(artifact)
