@@ -16,7 +16,6 @@ import jetbrains.buildServer.serverSide.artifacts.ServerArtifactHelper
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleConstants
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleUtils
 import jetbrains.buildServer.serverSide.cleanup.BuildCleanupContext
-import jetbrains.buildServer.serverSide.cleanup.BuildCleanupContextEx
 import jetbrains.buildServer.serverSide.cleanup.CleanupExtension
 import jetbrains.buildServer.serverSide.cleanup.CleanupProcessState
 import jetbrains.buildServer.serverSide.impl.cleanup.HistoryRetentionPolicy
@@ -36,7 +35,7 @@ class GoogleCleanupExtension(private val helper: ServerArtifactHelper,
             val properties = artifactsInfo.commonProperties
             val pathPrefix = GoogleUtils.getPathPrefix(properties) ?: continue
 
-            val patterns = getPatternsForBuild(cleanupContext as BuildCleanupContextEx, build)
+            val patterns = getPatternsForBuild(cleanupContext, build)
             val toDelete = getPathsToDelete(artifactsInfo, patterns).map {
                 GoogleUtils.getArtifactPath(properties, it)
             }
@@ -74,7 +73,7 @@ class GoogleCleanupExtension(private val helper: ServerArtifactHelper,
 
     override fun getConstraint() = PositionConstraint.first()
 
-    private fun getPatternsForBuild(cleanupContext: BuildCleanupContextEx, build: SBuild): String {
+    private fun getPatternsForBuild(cleanupContext: BuildCleanupContext, build: SBuild): String {
         val policy = cleanupContext.getCleanupPolicyForBuild(build.buildId)
         return StringUtil.emptyIfNull(policy.parameters[HistoryRetentionPolicy.ARTIFACT_PATTERNS_PARAM])
     }
