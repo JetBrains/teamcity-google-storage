@@ -36,9 +36,7 @@ class GoogleCleanupExtension(private val helper: ServerArtifactHelper,
             val pathPrefix = GoogleUtils.getPathPrefix(properties) ?: continue
 
             val patterns = getPatternsForBuild(cleanupContext, build)
-            val toDelete = getPathsToDelete(artifactsInfo, patterns).map {
-                GoogleUtils.getArtifactPath(properties, it)
-            }
+            val toDelete = getPathsToDelete(artifactsInfo, patterns)
 
             if (toDelete.isEmpty()) continue
 
@@ -52,7 +50,11 @@ class GoogleCleanupExtension(private val helper: ServerArtifactHelper,
             }
 
             var succeededNum = 0
-            bucket.get(toDelete)?.filterNotNull()?.forEach {
+            val blobs = toDelete.map {
+                GoogleUtils.getArtifactPath(properties, it)
+            }
+
+            bucket.get(blobs)?.filterNotNull()?.forEach {
                 try {
                     it.delete()
                     succeededNum++
