@@ -2,6 +2,7 @@
 <%@ taglib prefix="l" tagdir="/WEB-INF/tags/layout" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="bs" tagdir="/WEB-INF/tags" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <jsp:useBean id="propertiesBean" scope="request" type="jetbrains.buildServer.controllers.BasePropertiesBean"/>
 <jsp:useBean id="params" class="jetbrains.buildServer.serverSide.artifacts.google.web.GoogleParametersProvider"/>
 
@@ -16,13 +17,16 @@
         <th class="noBorder"><label for="${params.accessKey}">JSON private key: <l:star/></label></th>
         <td>
             <div class="posRel">
-                <props:multilineProperty expanded="true" name="${params.accessKey}"
+                <props:multilineProperty name="${params.accessKey}"
+                                         expanded="${fn:length(propertiesBean.properties[params.accessKey]) == 0}"
                                          className="longField" note=""
                                          rows="5" cols="49" linkTitle="Edit JSON key"/>
             </div>
             <span class="smallNote">Specify the JSON private key.
                 <bs:help urlPrefix="https://cloud.google.com/storage/docs/authentication#generating-a-private-key"
-                         file=""/><br/>
+                         file=""/>
+                <span id="fileSelector" style="display: none">Paste file contents or drop the file onto the text area.</span>
+                <br/>
                 You need to grant a roles with a following permissions: <em>storage.buckets.list, storage.objects.*<em>
                         <bs:help urlPrefix="https://cloud.google.com/storage/docs/access-control/iam#roles" file=""/>
             </span>
@@ -100,4 +104,35 @@
     $j(document).on('click', '#buckets-refresh', function () {
         loadBuckets();
     });
+
+    if (typeof FileReader !== "undefined") {
+        var $textArea = $j(selectors);
+        var loadAccessKey = function (file) {
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                $textArea.val(e.target.result);
+            };
+            reader.readAsText(file);
+        };
+
+        $textArea.on('dragover', false).on('drop', function (e) {
+            var dt = e.dataTransfer || e.originalEvent.dataTransfer;
+            if (dt.items) {
+                for (var i = 0; i < dt.items.length; i++) {
+                    if (dt.items[i].kind === "file") {
+                        var file = dt.items[i].getAsFile();
+                        loadAccessKey(file);
+                        return false
+                    }
+                }
+            } else {
+                for (var i = 0; i < dt.files.length; i++) {
+                    loadAccessKey(dt.files[i]);
+                    return false
+                }
+            }
+        });
+
+        $j('#fileSelector').show();
+    }
 </script>
