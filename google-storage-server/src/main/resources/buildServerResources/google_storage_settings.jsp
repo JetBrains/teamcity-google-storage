@@ -111,6 +111,7 @@
             var reader = new FileReader();
             reader.onload = function (e) {
                 $textArea.val(e.target.result);
+                loadBuckets()
             };
             reader.readAsText(file);
         };
