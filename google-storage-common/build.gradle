@@ -1,12 +1,15 @@
 plugins{
-    id 'com.github.rodm.teamcity-common' version "0.11"
+    id 'com.github.rodm.teamcity-common' version "1.0"
 }
 
 dependencies {
-    compile "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
-    compile "com.google.cloud:google-cloud-storage:0.11.0-beta"
+    compile "org.jetbrains.kotlin:kotlin-stdlib"
+    compile "com.google.cloud:google-cloud-storage:$googleSdkVersion"
 }
 
 teamcity {
     version = teamcityVersion
 }
+
+sourceCompatibility = JavaVersion.VERSION_1_7
+targetCompatibility = JavaVersion.VERSION_1_7
