@@ -9,6 +9,7 @@ package jetbrains.buildServer.serverSide.artifacts.google.web
 
 import com.google.cloud.storage.HttpMethod
 import com.google.cloud.storage.Storage
+import com.google.cloud.storage.StorageException
 import com.google.common.cache.CacheBuilder
 import com.intellij.openapi.diagnostic.Logger
 import jetbrains.buildServer.serverSide.BuildPromotion
@@ -61,9 +62,14 @@ class GoogleArtifactDownloadProcessor : ArtifactDownloadProcessor {
                 val httpMethod = Storage.SignUrlOption.httpMethod(HttpMethod.GET)
                 blob.signUrl(lifeTime.toLong(),  TimeUnit.SECONDS, httpMethod).toString()
             })
-        } catch (e: Throwable) {
-            val message = "Failed to create URl for blob $path"
+        } catch (e: StorageException){
+            val errorType = if (e.isRetryable) "intermittent" else ""
+            val message = "Failed to get URL for blob $path due to $errorType Google Cloud Storage error, try to access it later"
             LOG.infoAndDebugDetails(message, e)
+            throw IOException(message + ": " + e.message, e)
+        } catch (e: Throwable) {
+            val message = "Failed to get URL for blob $path from Google Cloud Storage due to unexpected error"
+            LOG.warnAndDebugDetails(message, e)
             throw IOException(message + ": " + e.message, e)
         }
     }

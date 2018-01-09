@@ -7,6 +7,7 @@
 
 package jetbrains.buildServer.serverSide.artifacts.google
 
+import com.google.cloud.storage.StorageException
 import com.intellij.openapi.diagnostic.Logger
 import jetbrains.buildServer.serverSide.artifacts.ArtifactContentProvider
 import jetbrains.buildServer.serverSide.artifacts.StoredBuildArtifactInfo
@@ -25,9 +26,14 @@ class GoogleArtifactContentProvider : ArtifactContentProvider {
         try {
             val bucket = GoogleUtils.getStorageBucket(artifactInfo.storageSettings)
             val blob = bucket.get(path)
-            return Channels.newInputStream(blob.reader(*emptyArray()))
+            return Channels.newInputStream(blob.reader())
+        } catch (e: StorageException) {
+            val errorType = if (e.isRetryable) "intermittent" else ""
+            val message = "Failed to access artifact $path due to $errorType Google Cloud Storage error, try to access it later"
+            LOG.infoAndDebugDetails(message, e)
+            throw IOException("$message: $e.message", e)
         } catch (e: Throwable) {
-            val message = "Failed to get artifact $path from Google Cloud Storage"
+            val message = "Failed to access artifact $path from Google Cloud Storage due to unexpected error"
             LOG.warnAndDebugDetails(message, e)
             throw IOException("$message: $e.message", e)
         }
