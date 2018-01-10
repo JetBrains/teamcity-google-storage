@@ -38,11 +38,33 @@ class GoogleArtifactDownloadProcessor : ArtifactDownloadProcessor {
                 ?: throw IOException("Can not process artifact download request for a folder")
 
         val path = GoogleUtils.getArtifactPath(artifactInfo.commonProperties, artifactData.path)
+        val parameters = artifactInfo.storageSettings
         val lifeTime = urlLifeTime
 
-        val temporaryUrl = getTemporaryUrl(path, artifactInfo.storageSettings, lifeTime)
+        val url = try {
+            myLinksCache.get(getIdentity(parameters, path), {
+                val bucket = GoogleUtils.getStorageBucket(parameters)
+                val blob = bucket.get(path)
+                val httpMethod = Storage.SignUrlOption.httpMethod(HttpMethod.GET)
+                blob.signUrl(lifeTime.toLong(), TimeUnit.SECONDS, httpMethod).toString()
+            })
+        } catch (e: StorageException) {
+            val errorType = if (e.isRetryable) "intermittent" else ""
+            val message = "Failed to get signed URL for blob $path due to $errorType Google Cloud Storage error, try to access it later"
+            LOG.infoAndDebugDetails(message, e)
+
+            response.status = HttpServletResponse.SC_BAD_GATEWAY
+            response.sendError(HttpServletResponse.SC_BAD_GATEWAY, e.message)
+
+            return true
+        } catch (e: Throwable) {
+            val message = "Failed to get signed URL for blob $path from Google Cloud Storage due to unexpected error"
+            LOG.warnAndDebugDetails(message, e)
+            throw IOException(message + ": " + e.message, e)
+        }
+
         response.setHeader(HttpHeaders.CACHE_CONTROL, "max-age=" + lifeTime)
-        response.sendRedirect(temporaryUrl)
+        response.sendRedirect(url)
 
         return true
     }
@@ -50,29 +72,9 @@ class GoogleArtifactDownloadProcessor : ArtifactDownloadProcessor {
     override fun getType() = GoogleConstants.STORAGE_TYPE
 
     private val urlLifeTime
-            get() = TeamCityProperties.getInteger(
-                    GoogleConstants.URL_LIFETIME_SEC,
-                    GoogleConstants.DEFAULT_URL_LIFETIME_SEC)
-
-    private fun getTemporaryUrl(path: String, parameters: Map<String, String>, lifeTime: Int): String {
-        try {
-            return myLinksCache.get(getIdentity(parameters, path), {
-                val bucket = GoogleUtils.getStorageBucket(parameters)
-                val blob = bucket.get(path)
-                val httpMethod = Storage.SignUrlOption.httpMethod(HttpMethod.GET)
-                blob.signUrl(lifeTime.toLong(),  TimeUnit.SECONDS, httpMethod).toString()
-            })
-        } catch (e: StorageException){
-            val errorType = if (e.isRetryable) "intermittent" else ""
-            val message = "Failed to get URL for blob $path due to $errorType Google Cloud Storage error, try to access it later"
-            LOG.infoAndDebugDetails(message, e)
-            throw IOException(message + ": " + e.message, e)
-        } catch (e: Throwable) {
-            val message = "Failed to get URL for blob $path from Google Cloud Storage due to unexpected error"
-            LOG.warnAndDebugDetails(message, e)
-            throw IOException(message + ": " + e.message, e)
-        }
-    }
+        get() = TeamCityProperties.getInteger(
+                GoogleConstants.URL_LIFETIME_SEC,
+                GoogleConstants.DEFAULT_URL_LIFETIME_SEC)
 
     private fun getIdentity(params: Map<String, String>, path: String): String {
         return StringBuilder().apply {
