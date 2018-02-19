@@ -78,6 +78,7 @@ class GoogleArtifactDownloadProcessor : ArtifactDownloadProcessor {
 
     private fun getIdentity(params: Map<String, String>, path: String): String {
         return StringBuilder().apply {
+            append(params[GoogleConstants.CREDENTIALS_TYPE])
             append(params[GoogleConstants.PARAM_ACCESS_KEY])
             append(params[GoogleConstants.PARAM_BUCKET_NAME])
             append(path)

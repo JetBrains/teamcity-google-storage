@@ -12,6 +12,9 @@ import jetbrains.buildServer.agent.Constants
 object GoogleConstants {
     const val STORAGE_TYPE = "google-storage"
     const val SETTINGS_PATH = "google_storage_settings"
+    const val CREDENTIALS_TYPE = "credentialsType"
+    const val CREDENTIALS_ENVIRONMENT = "environment"
+    const val CREDENTIALS_KEY = "key"
     const val PARAM_ACCESS_KEY = Constants.SECURE_PROPERTY_PREFIX + "access-key"
     const val PARAM_BUCKET_NAME = "bucket-name"
     const val PATH_PREFIX_ATTR = "google_path_prefix"

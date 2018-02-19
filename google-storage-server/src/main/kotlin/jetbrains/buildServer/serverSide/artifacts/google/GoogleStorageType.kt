@@ -34,7 +34,8 @@ class GoogleStorageType(registry: ArtifactStorageTypeRegistry,
             val invalidProperties = arrayListOf<InvalidProperty>()
 
             GoogleConstants.PARAM_ACCESS_KEY.apply {
-                if (it[this].isNullOrEmpty()) {
+                if (it[GoogleConstants.CREDENTIALS_TYPE] != GoogleConstants.CREDENTIALS_ENVIRONMENT &&
+                        it[this].isNullOrEmpty()) {
                     invalidProperties.add(InvalidProperty(this, EMPTY_VALUE))
                 } else {
                     try {
@@ -54,5 +55,9 @@ class GoogleStorageType(registry: ArtifactStorageTypeRegistry,
 
             invalidProperties
         }
+    }
+
+    override fun getDefaultParameters(): MutableMap<String, String> {
+        return mutableMapOf(GoogleConstants.CREDENTIALS_TYPE to GoogleConstants.CREDENTIALS_ENVIRONMENT)
     }
 }

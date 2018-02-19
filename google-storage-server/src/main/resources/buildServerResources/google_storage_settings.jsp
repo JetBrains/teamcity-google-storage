@@ -4,52 +4,87 @@
 <%@ taglib prefix="bs" tagdir="/WEB-INF/tags" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <jsp:useBean id="propertiesBean" scope="request" type="jetbrains.buildServer.controllers.BasePropertiesBean"/>
-<jsp:useBean id="params" class="jetbrains.buildServer.serverSide.artifacts.google.web.GoogleParametersProvider"/>
+<jsp:useBean id="cons" class="jetbrains.buildServer.serverSide.artifacts.google.web.GoogleParametersProvider"/>
 
 <style type="text/css">
     .runnerFormTable {
         margin-top: 1em;
     }
+    .runnerFormTable td .posRel {
+        padding-right: 0;
+    }
 </style>
 
-<l:settingsGroup title="Storage Credentials">
+<l:settingsGroup title="Security Credentials">
     <tr>
-        <th class="noBorder"><label for="${params.accessKey}">JSON private key: <l:star/></label></th>
+        <th><label for="${cons.credentialsType}">Credentials type: <l:star/></label></th>
+        <td>
+            <props:radioButtonProperty name="${cons.credentialsType}"
+                                       id="${cons.credentialsEnvironment}"
+                                       value="${cons.credentialsEnvironment}"/>
+            <label for="${cons.credentialsEnvironment}">From machine environment</label>
+            <span class="smallNote">Use authentication from machine environment</span>
+            <br/>
+            <props:radioButtonProperty name="${cons.credentialsType}"
+                                       id="${cons.credentialsKey}"
+                                       value="${cons.credentialsKey}"/>
+            <label for="${cons.credentialsKey}">JSON private key</label>
+            <span class="smallNote">Specify private key for service account</span>
+            <br/>
+            <a href="https://console.cloud.google.com/iam-admin/" target="_blank">Open IAM Console</a>
+        </td>
+    </tr>
+    <tr id="access-key-selector">
+        <th class="noBorder"><label for="${cons.accessKey}">JSON private key: <l:star/></label></th>
         <td>
             <div class="posRel">
-                <props:multilineProperty name="${params.accessKey}"
-                                         expanded="${fn:length(propertiesBean.properties[params.accessKey]) == 0}"
+                <props:multilineProperty name="${cons.accessKey}"
+                                         expanded="${fn:length(propertiesBean.properties[cons.accessKey]) == 0}"
                                          className="longField" note=""
                                          rows="5" cols="49" linkTitle="Edit JSON key"/>
             </div>
             <span class="smallNote">Specify the JSON private key.
                 <bs:help urlPrefix="https://cloud.google.com/storage/docs/authentication#generating-a-private-key"
                          file=""/>
-                <span id="fileSelector" style="display: none">Paste file contents or drop the file onto the text area.</span>
-                <br/>
-                You need to grant a roles with a following permissions: <em>storage.buckets.list, storage.objects.*<em>
-                        <bs:help urlPrefix="https://cloud.google.com/storage/docs/access-control/iam#roles" file=""/>
             </span>
+            <div id="file-selector" class="hidden">
+                <input type="file" />
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2">
+            <span class="smallNote">
+                You need to grant <em>Project Viewer</em> and <em>Storage Object Admin</em> roles or custom role with a following permissions: <em>storage.buckets.list</em>, <em>storage.objects.*</em>
+                    <bs:help urlPrefix="https://cloud.google.com/storage/docs/access-control/iam#roles" file=""/>
+            </span>
+            <span class="error option-error" id="errors"></span>
         </td>
     </tr>
 </l:settingsGroup>
 
 <l:settingsGroup title="Storage Parameters">
     <tr class="advancedSetting">
-        <th class="noBorder"><label for="${params.bucketName}">Bucket name:</label></th>
+        <th class="noBorder"><label for="${cons.bucketName}">Bucket name:</label></th>
         <td>
             <div class="posRel">
-                <c:set var="bucket" value="${propertiesBean.properties[params.bucketName]}"/>
-                <props:selectProperty name="${params.bucketName}" className="longField">
-                    <c:if test="${not empty bucket}">
-                        <props:option value="${bucket}"><c:out value="${bucket}"/></props:option>
-                    </c:if>
-                </props:selectProperty>
-                <i class="icon-refresh" title="Reload buckets" id="buckets-refresh"></i>
+                <div class="hidden" id="buckets-selector">
+                    <c:set var="bucket" value="${propertiesBean.properties[cons.bucketName]}"/>
+                    <props:selectProperty name="${cons.bucketName}" className="longField">
+                        <c:if test="${not empty bucket}">
+                            <props:option value="${bucket}"><c:out value="${bucket}"/></props:option>
+                        </c:if>
+                    </props:selectProperty>
+                </div>
+                <div class="longField inline-block" id="buckets-error">
+                <span class="error option-error">
+                    No buckets found. <a href="https://console.cloud.google.com/iam-admin/iam/project" target="_blank">Check permissions</a> or
+                    <a href="https://console.cloud.google.com/storage/browser" target="_blank">create a new bucket</a>.
+                </span>
+                </div>
             </div>
-            <span class="smallNote">Specify the bucket name where artifacts will be published.<br/>
-                You can override default path prefix via build parameter <em><c:out value="${params.pathPrefix}"/></em>
-            </span>
+            <i class="icon-refresh" title="Reload buckets" id="buckets-refresh"></i>
+            <span class="smallNote">Specify the bucket name where artifacts will be published.</span>
         </td>
     </tr>
 </l:settingsGroup>
@@ -67,17 +102,19 @@
     function loadBuckets() {
         var parameters = BS.EditStorageForm.serializeParameters();
         var $refreshButton = $j('#buckets-refresh').addClass('icon-spin');
-        $j.post(window['base_uri'] + '${params.containersPath}', parameters)
+        $j.post(window['base_uri'] + '${cons.containersPath}', parameters)
             .then(function (response) {
                 var $response = $j(response);
                 var errors = getErrors($response);
-                $j(BS.Util.escapeId('error_${params.accessKey}')).text(errors);
+                $j(BS.Util.escapeId('errors')).text(errors);
+                $j(BS.Util.escapeId('buckets-error')).toggleClass('hidden', !errors);
+                $j(BS.Util.escapeId('buckets-selector')).toggleClass('hidden', !!errors);
 
                 if (errors) {
                     return;
                 }
 
-                var $selector = $j('#${params.bucketName}');
+                var $selector = $j('#${cons.bucketName}');
                 var value = $selector.val();
                 $selector.empty();
                 $response.find("buckets:eq(0) bucket").map(function () {
@@ -94,8 +131,8 @@
             });
     }
 
-    var selectors = BS.Util.escapeId('${params.accessKey}');
-    $j(document).on('change', selectors, function () {
+    var accessKeySelector = BS.Util.escapeId('${cons.accessKey}');
+    $j(document).on('change', accessKeySelector, function () {
         loadBuckets();
     });
     $j(document).on('ready', function () {
@@ -105,8 +142,22 @@
         loadBuckets();
     });
 
+    var credentialsSelector = 'input[type=radio][name="prop:${cons.credentialsType}"]';
+    $j(document).on('change', credentialsSelector, function () {
+        updateCredentialsVisibility();
+    });
+
+    function updateCredentialsVisibility() {
+        var value = $j(credentialsSelector + ':checked').val();
+        $j('#access-key-selector').toggle(value === '${cons.credentialsKey}');
+
+        BS.MultilineProperties.updateVisible();
+
+        loadBuckets();
+    }
+
     if (typeof FileReader !== "undefined") {
-        var $textArea = $j(selectors);
+        var $textArea = $j(accessKeySelector);
         var loadAccessKey = function (file) {
             var reader = new FileReader();
             reader.onload = function (e) {
@@ -134,6 +185,11 @@
             }
         });
 
-        $j('#fileSelector').show();
+        $j('#file-selector').removeClass('hidden')
+            .find('input[type=file]').on('change', function () {
+                loadAccessKey(this.files[0]);
+            });
     }
+
+    updateCredentialsVisibility();
 </script>

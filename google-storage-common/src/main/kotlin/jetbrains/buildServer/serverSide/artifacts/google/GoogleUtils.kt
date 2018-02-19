@@ -24,6 +24,10 @@ object GoogleUtils {
     }
 
     fun getStorage(parameters: Map<String, String>): Storage {
+        if (parameters[GoogleConstants.CREDENTIALS_TYPE] == GoogleConstants.CREDENTIALS_ENVIRONMENT) {
+            return StorageOptions.getDefaultInstance().service
+        }
+
         val builder = StorageOptions.newBuilder()
         parameters[GoogleConstants.PARAM_ACCESS_KEY]?.trim()?.byteInputStream()?.use {
             val factory = Utils.getDefaultJsonFactory()
@@ -58,7 +62,7 @@ object GoogleUtils {
             }
         }
         else -> {
-            "Invalid key: ${e.message}"
+            "Invalid credentials: ${e.message}"
         }
     }
 
