@@ -17,13 +17,9 @@ import jetbrains.buildServer.log.LogUtil
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleConstants
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleConstants.PATH_PREFIX_ATTR
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleConstants.PATH_PREFIX_SYSTEM_PROPERTY
-import jetbrains.buildServer.serverSide.artifacts.google.GoogleUtils
 import jetbrains.buildServer.util.EventDispatcher
-import jetbrains.buildServer.util.FileUtil
 import java.io.File
-import java.io.FileInputStream
 import java.io.IOException
-import java.net.URLConnection
 
 class GoogleArtifactsPublisher(dispatcher: EventDispatcher<AgentLifeCycleListener>,
                                private val helper: AgentArtifactHelper,
@@ -47,36 +43,19 @@ class GoogleArtifactsPublisher(dispatcher: EventDispatcher<AgentLifeCycleListene
     override fun publishFiles(filePathMap: Map<File, String>): Int {
         val filesToPublish = filePathMap.entries.filter {
             !it.value.startsWith(ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR)
-        }
+        }.associateTo(hashMapOf(), { entry -> entry.toPair() })
 
         if (filesToPublish.isNotEmpty()) {
             val build = tracker.currentBuild
             try {
-                val parameters = publisherParameters
-
                 if (publishedArtifacts.isEmpty()) {
                     setPathPrefixProperty(build)
                 }
 
-                val bucket = GoogleUtils.getStorageBucket(parameters)
+                val uploader = GoogleFileUploaderFactory.getFileUploader(build)
                 val pathPrefix = getPathPrefixProperty(build)
-
-                filesToPublish.forEach { (file, path) ->
-                    val filePath = preparePath(path, file.name)
-                    val blobName = preparePath(pathPrefix, filePath)
-                    val contentType = URLConnection.guessContentTypeFromName(file.name)
-
-                    FileInputStream(file).use {
-                        if (contentType == null) {
-                            bucket.create(blobName, it)
-                        } else {
-                            bucket.create(blobName, it, contentType)
-                        }
-                        val length = file.length()
-                        val artifact = ArtifactDataInstance.create(filePath, length)
-                        publishedArtifacts.add(artifact)
-                    }
-                }
+                val published = uploader.publishFiles(build, pathPrefix, filesToPublish)
+                publishedArtifacts.addAll(published)
             } catch (e: Throwable) {
                 val message = "Failed to publish files"
                 LOG.warnAndDebugDetails(message, e)
@@ -93,19 +72,9 @@ class GoogleArtifactsPublisher(dispatcher: EventDispatcher<AgentLifeCycleListene
         return filesToPublish.size
     }
 
-    private fun preparePath(path: String, fileName: String): String {
-        return if (path.isEmpty()) {
-            fileName
-        } else {
-            FileUtil.normalizeRelativePath("$path$SLASH$fileName")
-        }
-    }
-
     override fun getType() = GoogleConstants.STORAGE_TYPE
 
     override fun isEnabled() = true
-
-    private val publisherParameters get() = tracker.currentBuild.artifactStorageSettings
 
     private fun publishArtifactsList(build: AgentRunningBuild) {
         if (publishedArtifacts.isNotEmpty()) {
@@ -121,7 +90,7 @@ class GoogleArtifactsPublisher(dispatcher: EventDispatcher<AgentLifeCycleListene
     }
 
     private fun setPathPrefixProperty(build: AgentRunningBuild) {
-        val pathPrefix = getPathPrefix(build)
+        val pathPrefix = GoogleFileUtils.getPathPrefix(build)
         build.addSharedSystemProperty(PATH_PREFIX_SYSTEM_PROPERTY, pathPrefix)
     }
 
@@ -130,35 +99,8 @@ class GoogleArtifactsPublisher(dispatcher: EventDispatcher<AgentLifeCycleListene
                 throw ArtifactPublishingFailedException("No $PATH_PREFIX_SYSTEM_PROPERTY build system property found", false, null)
     }
 
-    /**
-     * Calculates path prefix.
-     */
-    private fun getPathPrefix(build: AgentRunningBuild): String {
-        val pathSegments = arrayListOf<String>()
-
-        // Try to get overriden path prefix
-        val pathPrefix = build.sharedConfigParameters[PATH_PREFIX_SYSTEM_PROPERTY]
-        if (pathPrefix == null) {
-            // Set default path prefix
-            build.sharedConfigParameters[ServerProvidedProperties.TEAMCITY_PROJECT_ID_PARAM]?.let {
-                pathSegments.add(it)
-            }
-            pathSegments.add(build.buildTypeExternalId)
-            pathSegments.add(build.buildId.toString())
-        } else {
-            pathSegments.addAll(pathPrefix
-                    .trim()
-                    .replace('\\', SLASH)
-                    .split(SLASH)
-                    .filter { it.isNotEmpty() })
-        }
-
-        return pathSegments.joinToString("$SLASH")
-    }
-
     companion object {
         private val LOG = Logger.getInstance(GoogleArtifactsPublisher::class.java.name)
         private val ERROR_PUBLISHING_ARTIFACTS_LIST = "Error publishing artifacts list"
-        private val SLASH = '/'
     }
 }

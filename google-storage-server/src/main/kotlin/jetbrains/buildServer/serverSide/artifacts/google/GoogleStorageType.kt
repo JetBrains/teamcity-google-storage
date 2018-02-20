@@ -15,8 +15,6 @@ import jetbrains.buildServer.web.openapi.PluginDescriptor
 
 class GoogleStorageType(registry: ArtifactStorageTypeRegistry,
                         private val descriptor: PluginDescriptor) : ArtifactStorageType() {
-    private val EMPTY_VALUE = "Should not be empty"
-
     init {
         registry.registerStorageType(this)
     }
@@ -58,6 +56,21 @@ class GoogleStorageType(registry: ArtifactStorageTypeRegistry,
     }
 
     override fun getDefaultParameters(): MutableMap<String, String> {
-        return mutableMapOf(GoogleConstants.CREDENTIALS_TYPE to GoogleConstants.CREDENTIALS_ENVIRONMENT)
+        return mutableMapOf(
+                GoogleConstants.CREDENTIALS_TYPE to GoogleConstants.CREDENTIALS_ENVIRONMENT,
+                GoogleConstants.USE_SIGNED_URL_FOR_UPLOAD to true.toString()
+        )
+    }
+
+    override fun getSettingsPreprocessor() = SettingsPreprocessor { input ->
+        return@SettingsPreprocessor HashMap<String, String>(input).apply {
+            if (GoogleUtils.useSignedUrls(input)) {
+                this.remove(GoogleConstants.PARAM_ACCESS_KEY)
+            }
+        }
+    }
+
+    companion object {
+        private val EMPTY_VALUE = "Should not be empty"
     }
 }

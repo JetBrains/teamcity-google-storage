@@ -11,7 +11,8 @@ import jetbrains.buildServer.agent.Constants
 
 object GoogleConstants {
     const val STORAGE_TYPE = "google-storage"
-    const val SETTINGS_PATH = "google_storage_settings"
+    const val SETTINGS_PATH = "google-storage-settings"
+    const val SIGNED_URL_PATH = "google-signed-urls"
     const val CREDENTIALS_TYPE = "credentialsType"
     const val CREDENTIALS_ENVIRONMENT = "environment"
     const val CREDENTIALS_KEY = "key"
@@ -19,6 +20,9 @@ object GoogleConstants {
     const val PARAM_BUCKET_NAME = "bucket-name"
     const val PATH_PREFIX_ATTR = "google_path_prefix"
     const val PATH_PREFIX_SYSTEM_PROPERTY = "storage.google.path.prefix"
+    const val USE_SIGNED_URL_FOR_UPLOAD = "storage.google.signedUrl.upload.enabled"
     const val URL_LIFETIME_SEC = "storage.google.url.expiration.time.seconds"
+    const val SIGNED_URL_GET_CACHE_ENABLED = "storage.google.signedUrl.get.cache.enabled"
+
     const val DEFAULT_URL_LIFETIME_SEC = 60
 }

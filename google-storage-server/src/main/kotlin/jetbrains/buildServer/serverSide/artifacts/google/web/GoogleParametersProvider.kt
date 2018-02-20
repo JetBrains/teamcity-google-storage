@@ -7,7 +7,6 @@
 
 package jetbrains.buildServer.serverSide.artifacts.google.web
 
-import jetbrains.buildServer.parameters.ReferencesResolverUtil
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleConstants
 
 class GoogleParametersProvider {
@@ -30,6 +29,6 @@ class GoogleParametersProvider {
     val containersPath: String
         get() = "/plugins/${GoogleConstants.STORAGE_TYPE}/${GoogleConstants.SETTINGS_PATH}.html"
 
-    val pathPrefix: String
-        get() = ReferencesResolverUtil.makeReference(GoogleConstants.PATH_PREFIX_SYSTEM_PROPERTY)
+    val useSignedUrlForUpload: String
+        get() = GoogleConstants.USE_SIGNED_URL_FOR_UPLOAD
 }

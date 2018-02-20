@@ -6,4 +6,6 @@
     <bean class="jetbrains.buildServer.serverSide.artifacts.google.cleanup.GoogleCleanupExtension"/>
     <bean class="jetbrains.buildServer.serverSide.artifacts.google.web.GoogleSettingsController"/>
     <bean class="jetbrains.buildServer.serverSide.artifacts.google.web.GoogleArtifactDownloadProcessor"/>
+    <bean class="jetbrains.buildServer.serverSide.artifacts.google.web.GoogleSignedUrlController"/>
+    <bean class="jetbrains.buildServer.serverSide.artifacts.google.signedUrl.GoogleSignedUrlProviderImpl"/>
 </beans>

@@ -47,7 +47,11 @@ object GoogleUtils {
     fun getStorageBucket(parameters: Map<String, String>): Bucket {
         val storage = getStorage(parameters)
         val bucketName = parameters[GoogleConstants.PARAM_BUCKET_NAME]?.trim()
-        return storage.get(bucketName, Storage.BucketGetOption.fields(*emptyArray()))
+        return storage.get(bucketName, Storage.BucketGetOption.fields())
+    }
+
+    fun useSignedUrls(parameters: Map<String, String>): Boolean {
+        return parameters[GoogleConstants.USE_SIGNED_URL_FOR_UPLOAD]?.trim()?.toBoolean() ?: false
     }
 
     fun getExceptionMessage(e: Throwable) = when (e) {
@@ -55,7 +59,7 @@ object GoogleUtils {
             "Invalid key format"
         }
         is IllegalArgumentException -> {
-            if (e.message?.contains("project ID is required") ?: false) {
+            if (e.message?.contains("project ID is required") == true) {
                 "Invalid key: no project id"
             } else {
                 "Invalid key: ${e.message}"

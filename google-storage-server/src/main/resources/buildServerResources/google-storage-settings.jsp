@@ -65,7 +65,7 @@
 
 <l:settingsGroup title="Storage Parameters">
     <tr class="advancedSetting">
-        <th class="noBorder"><label for="${cons.bucketName}">Bucket name:</label></th>
+        <th><label for="${cons.bucketName}">Bucket name:</label></th>
         <td>
             <div class="posRel">
                 <div class="hidden" id="buckets-selector">
@@ -85,6 +85,14 @@
             </div>
             <i class="icon-refresh" title="Reload buckets" id="buckets-refresh"></i>
             <span class="smallNote">Specify the bucket name where artifacts will be published.</span>
+        </td>
+    </tr>
+    <tr>
+        <th class="noBorder">Options:</th>
+        <td>
+            <props:checkboxProperty name="${cons.useSignedUrlForUpload}"/>
+            <label for="${cons.useSignedUrlForUpload}">Use <a href="https://cloud.google.com/storage/docs/access-control/signed-urls" target="_blank">signed URLs</a> for artifacts upload</label>
+            <span class="smallNote">Prevents exposing security credentials on build agent machine.</span>
         </td>
     </tr>
 </l:settingsGroup>

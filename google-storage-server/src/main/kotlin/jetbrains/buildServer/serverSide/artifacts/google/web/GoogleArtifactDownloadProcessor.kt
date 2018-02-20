@@ -8,27 +8,20 @@
 package jetbrains.buildServer.serverSide.artifacts.google.web
 
 import com.google.cloud.storage.HttpMethod
-import com.google.cloud.storage.Storage
 import com.google.cloud.storage.StorageException
-import com.google.common.cache.CacheBuilder
 import com.intellij.openapi.diagnostic.Logger
 import jetbrains.buildServer.serverSide.BuildPromotion
-import jetbrains.buildServer.serverSide.TeamCityProperties
 import jetbrains.buildServer.serverSide.artifacts.StoredBuildArtifactInfo
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleConstants
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleUtils
+import jetbrains.buildServer.serverSide.artifacts.google.signedUrl.GoogleSignedUrlProvider
 import jetbrains.buildServer.web.openapi.artifacts.ArtifactDownloadProcessor
 import org.springframework.http.HttpHeaders
 import java.io.IOException
-import java.util.concurrent.TimeUnit
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
-class GoogleArtifactDownloadProcessor : ArtifactDownloadProcessor {
-    private val myLinksCache = CacheBuilder.newBuilder()
-            .expireAfterWrite(urlLifeTime.toLong(), TimeUnit.SECONDS)
-            .maximumSize(100)
-            .build<String, String>()
+class GoogleArtifactDownloadProcessor(private val signedUrlProvider: GoogleSignedUrlProvider) : ArtifactDownloadProcessor {
 
     override fun processDownload(artifactInfo: StoredBuildArtifactInfo,
                                  buildPromotion: BuildPromotion,
@@ -39,15 +32,9 @@ class GoogleArtifactDownloadProcessor : ArtifactDownloadProcessor {
 
         val path = GoogleUtils.getArtifactPath(artifactInfo.commonProperties, artifactData.path)
         val parameters = artifactInfo.storageSettings
-        val lifeTime = urlLifeTime
 
-        val url = try {
-            myLinksCache.get(getIdentity(parameters, path), {
-                val bucket = GoogleUtils.getStorageBucket(parameters)
-                val blob = bucket.get(path)
-                val httpMethod = Storage.SignUrlOption.httpMethod(HttpMethod.GET)
-                blob.signUrl(lifeTime.toLong(), TimeUnit.SECONDS, httpMethod).toString()
-            })
+        val result = try {
+            signedUrlProvider.getSignedUrl(HttpMethod.GET, path, parameters)
         } catch (e: StorageException) {
             val errorType = if (e.isRetryable) "intermittent" else ""
             val message = "Failed to get signed URL for blob $path due to $errorType Google Cloud Storage error, try to access it later"
@@ -63,27 +50,13 @@ class GoogleArtifactDownloadProcessor : ArtifactDownloadProcessor {
             throw IOException(message + ": " + e.message, e)
         }
 
-        response.setHeader(HttpHeaders.CACHE_CONTROL, "max-age=" + lifeTime)
-        response.sendRedirect(url)
+        response.setHeader(HttpHeaders.CACHE_CONTROL, "max-age=" + result.second)
+        response.sendRedirect(result.first)
 
         return true
     }
 
     override fun getType() = GoogleConstants.STORAGE_TYPE
-
-    private val urlLifeTime
-        get() = TeamCityProperties.getInteger(
-                GoogleConstants.URL_LIFETIME_SEC,
-                GoogleConstants.DEFAULT_URL_LIFETIME_SEC)
-
-    private fun getIdentity(params: Map<String, String>, path: String): String {
-        return StringBuilder().apply {
-            append(params[GoogleConstants.CREDENTIALS_TYPE])
-            append(params[GoogleConstants.PARAM_ACCESS_KEY])
-            append(params[GoogleConstants.PARAM_BUCKET_NAME])
-            append(path)
-        }.toString().toLowerCase().hashCode().toString()
-    }
 
     companion object {
         private val LOG = Logger.getInstance(GoogleArtifactDownloadProcessor::class.java.name)
