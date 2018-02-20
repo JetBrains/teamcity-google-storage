@@ -92,7 +92,10 @@
         <td>
             <props:checkboxProperty name="${cons.useSignedUrlForUpload}"/>
             <label for="${cons.useSignedUrlForUpload}">Use <a href="https://cloud.google.com/storage/docs/access-control/signed-urls" target="_blank">signed URLs</a> for artifacts upload</label>
-            <span class="smallNote">Prevents exposing security credentials on build agent machine.</span>
+            <span class="smallNote">
+                Prevents exposing security credentials on build agent.
+                Requires to <a href="https://github.com/google/google-auth-library-java/issues/141" target="_blank">have private json key</a> on TeamCity server.
+            </span>
         </td>
     </tr>
 </l:settingsGroup>

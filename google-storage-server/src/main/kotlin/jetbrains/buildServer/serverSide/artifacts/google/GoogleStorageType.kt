@@ -56,10 +56,7 @@ class GoogleStorageType(registry: ArtifactStorageTypeRegistry,
     }
 
     override fun getDefaultParameters(): MutableMap<String, String> {
-        return mutableMapOf(
-                GoogleConstants.CREDENTIALS_TYPE to GoogleConstants.CREDENTIALS_ENVIRONMENT,
-                GoogleConstants.USE_SIGNED_URL_FOR_UPLOAD to true.toString()
-        )
+        return mutableMapOf(GoogleConstants.CREDENTIALS_TYPE to GoogleConstants.CREDENTIALS_ENVIRONMENT)
     }
 
     override fun getSettingsPreprocessor() = SettingsPreprocessor { input ->
