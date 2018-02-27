@@ -4,7 +4,12 @@ plugins{
 
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib"
-    compile "com.google.cloud:google-cloud-storage:$googleSdkVersion"
+    compile ("com.google.cloud:google-cloud-storage:$googleSdkVersion") {
+        exclude group: 'com.google.auth', module: 'google-auth-library-credentials'
+        exclude group: 'com.google.auth', module: 'google-auth-library-oauth2-http'
+    }
+    compile files("$rootDir/libs/google-auth-library-credentials/google-auth-library-credentials-0.9.0.jar")
+    compile files("$rootDir/libs/google-auth-library-oauth2-http/google-auth-library-oauth2-http-0.9.0.jar")
 }
 
 teamcity {
