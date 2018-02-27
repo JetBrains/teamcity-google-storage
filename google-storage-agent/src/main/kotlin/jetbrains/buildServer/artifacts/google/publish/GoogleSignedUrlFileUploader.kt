@@ -120,11 +120,11 @@ class GoogleSignedUrlFileUploader : GoogleFileUploader {
         postMethod.doAuthentication = true
         val responseCode = httpClient.executeMethod(postMethod)
         if (responseCode != 200) {
-            throw IOException("Can't get signed upload URL.")
+            throw IOException("Could not get signed upload URL: " + postMethod.responseBodyAsString)
         }
 
         val mapping = GoogleSignedUrlHelper.readSignedUrlMapping(postMethod.responseBodyAsString)
-        return mapping[blobName] ?: throw IOException("Can't get signed upload URL.")
+        return mapping[blobName] ?: throw IOException("Could not get signed upload URL: no info for blob " + blobName)
     }
 
     companion object {

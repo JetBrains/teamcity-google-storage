@@ -56,18 +56,23 @@ class GoogleSignedUrlController(server: SBuildServer,
             return null
         }
 
-        return try {
+        try {
             val data = blobPaths.entries.associate {
                 val params = hashMapOf("contentType" to it.value)
                 it.key to URL(signedUrlProvider.getSignedUrl(HttpMethod.POST, it.key, parameters + params).first)
             }
             response.writer.append(GoogleSignedUrlHelper.writeSignedUrlMapping(data))
-            null
-        } catch (ex: IOException) {
-            LOG.debug("Failed to resolve signed upload urls for artifacts of build " + runningBuild.buildId, ex)
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
-            null
+        } catch (e: IOException) {
+            LOG.infoAndDebugDetails("Failed to resolve signed upload urls for artifacts of build " + runningBuild.buildId, e)
+            response.status = HttpServletResponse.SC_BAD_GATEWAY
+            response.writer.append(e.message)
+        } catch (e: Exception) {
+            LOG.warnAndDebugDetails("Unexpected error while resolving signed upload urls for artifacts of build " + runningBuild.buildId, e)
+            response.status = HttpServletResponse.SC_BAD_GATEWAY
+            response.writer.append(e.message)
         }
+
+        return null
     }
 
     private fun getRunningBuild(request: HttpServletRequest): RunningBuildEx? {
