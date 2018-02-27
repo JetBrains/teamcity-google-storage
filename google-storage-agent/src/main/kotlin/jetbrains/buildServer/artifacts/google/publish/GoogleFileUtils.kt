@@ -23,7 +23,7 @@ object GoogleFileUtils {
     fun getPathPrefix(build: AgentRunningBuild): String {
         val pathSegments = arrayListOf<String>()
 
-        // Try to get overriden path prefix
+        // Try to get overridden path prefix
         val pathPrefix = build.sharedConfigParameters[GoogleConstants.PATH_PREFIX_SYSTEM_PROPERTY]
         if (pathPrefix == null) {
             // Set default path prefix
@@ -44,7 +44,7 @@ object GoogleFileUtils {
     }
 
     fun getContentType(file: File): String {
-        return URLConnection.guessContentTypeFromName(file.name ?: "application/octet-stream")
+        return URLConnection.guessContentTypeFromName(file.name) ?: "application/octet-stream"
     }
 
     private val SLASH = '/'
