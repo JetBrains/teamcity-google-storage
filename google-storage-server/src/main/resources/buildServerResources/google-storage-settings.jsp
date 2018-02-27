@@ -16,18 +16,22 @@
 </style>
 
 <l:settingsGroup title="Security Credentials">
+    <c:set var="credentialsValue" value="${propertiesBean.properties[cons.credentialsType]}"/>
+    <c:set var="credentialsType" value="${empty credentialsValue ? cons.credentialsKey : credentialsValue}"/>
     <tr>
         <th><label for="${cons.credentialsType}">Credentials type: <l:star/></label></th>
         <td>
             <props:radioButtonProperty name="${cons.credentialsType}"
                                        id="${cons.credentialsEnvironment}"
-                                       value="${cons.credentialsEnvironment}"/>
+                                       value="${cons.credentialsEnvironment}"
+                                       checked="${credentialsType eq cons.credentialsEnvironment}"/>
             <label for="${cons.credentialsEnvironment}">From machine environment</label>
             <span class="smallNote">Use authentication from machine environment</span>
             <br/>
             <props:radioButtonProperty name="${cons.credentialsType}"
                                        id="${cons.credentialsKey}"
-                                       value="${cons.credentialsKey}"/>
+                                       value="${cons.credentialsKey}"
+                                       checked="${credentialsType eq cons.credentialsKey}"/>
             <label for="${cons.credentialsKey}">JSON private key</label>
             <span class="smallNote">Specify private key for service account</span>
             <br/>
@@ -92,10 +96,7 @@
         <td>
             <props:checkboxProperty name="${cons.useSignedUrlForUpload}"/>
             <label for="${cons.useSignedUrlForUpload}">Use <a href="https://cloud.google.com/storage/docs/access-control/signed-urls" target="_blank">signed URLs</a> for artifacts upload</label>
-            <span class="smallNote">
-                Prevents exposing security credentials on build agent.
-                Requires to <a href="https://github.com/google/google-auth-library-java/issues/141" target="_blank">have private json key</a> on TeamCity server.
-            </span>
+            <span class="smallNote">Prevents exposing security credentials to build agents.</span>
         </td>
     </tr>
 </l:settingsGroup>
