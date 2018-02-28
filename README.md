@@ -27,18 +27,25 @@ You can [download the plugin](https://plugins.jetbrains.com/plugin/9634-google-a
 
 The plugin is compatible with [TeamCity](https://www.jetbrains.com/teamcity/download/) **2017.1.1** and greater.
 
-# Configuring 
+# Configuration
 
 The plugin adds the Artifacts Storage tab to the Project Settings page in the TeamCity Web UI. 
 The tab lists the internal TeamCity artifacts storage displayed by default and marked as active.
 
 To configure Google Cloud Storage for TeamCity artifacts, perform the following:
-1. Select Google Storage as the storage type
-2. Fill in the account name and key
+1. Select `Google Storage` as the storage type.
+2. Specify credentials and bucket name.
 3. Save your settings.
 
 The configured Google Cloud Storage will appear on the Artifacts storage page. Make it active using the corresponding link.
 Now the artifacts of this project, its subprojects, and build configurations will be stored in the configured storage.
+
+## Required IAM Roles
+
+To make this plugin work you need to assign following roles for service account:
+* `Project Viewer` - required to list storage buckets.
+* `Storage Object Admin` - required to control storage blobs.
+* `Service Account Token Creator` - to be able to use Signed URLs on GCE instance without private key.
 
 # Build
 
