@@ -12,8 +12,11 @@ teamcity {
 dependencies {
     compile project(':google-storage-common')
     compile "org.jetbrains.kotlin:kotlin-stdlib"
+    compile "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxVersion"
     compile "com.google.cloud:google-cloud-storage:$googleSdkVersion"
 }
+
+kotlin { experimental { coroutines 'enable' } }
 
 agentPlugin.version = null
 agentPlugin.baseName = projectIds.artifact

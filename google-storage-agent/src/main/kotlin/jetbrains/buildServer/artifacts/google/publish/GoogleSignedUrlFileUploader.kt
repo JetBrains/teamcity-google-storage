@@ -7,6 +7,10 @@ import jetbrains.buildServer.artifacts.ArtifactDataInstance
 import jetbrains.buildServer.http.HttpUtil
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleConstants
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleSignedUrlHelper
+import kotlinx.coroutines.experimental.CommonPool
+import kotlinx.coroutines.experimental.CoroutineStart
+import kotlinx.coroutines.experimental.async
+import kotlinx.coroutines.experimental.runBlocking
 import org.apache.commons.httpclient.HttpClient
 import org.apache.commons.httpclient.UsernamePasswordCredentials
 import org.apache.commons.httpclient.methods.PostMethod
@@ -15,32 +19,30 @@ import org.apache.commons.httpclient.methods.StringRequestEntity
 import java.io.File
 import java.io.IOException
 import java.net.URL
-import java.util.concurrent.ConcurrentLinkedQueue
 
 class GoogleSignedUrlFileUploader : GoogleFileUploader {
 
     override fun publishFiles(build: AgentRunningBuild,
                               pathPrefix: String,
-                              filesToPublish: Map<File, String>): Collection<ArtifactDataInstance> {
-        val publishedArtifacts = ConcurrentLinkedQueue<ArtifactDataInstance>()
+                              filesToPublish: Map<File, String>) = runBlocking {
+        return@runBlocking filesToPublish.map({ (file, path) ->
+            publishFileAsync(build, file, path, pathPrefix)
+        }).map { it.await() }
+    }
 
-        filesToPublish.forEach({ file: File, path: String ->
-            val artifact = try {
-                publishFile(build, file, path, pathPrefix)
-            } catch (e: Throwable) {
-                val filePath = GoogleFileUtils.normalizePath(path, file.name)
-                val message = "Failed to publish artifact $filePath: ${e.message}"
-                LOG.infoAndDebugDetails(message, e)
-                throw ArtifactPublishingFailedException(message, false, e)
-            }
-            publishedArtifacts.add(artifact)
-        })
-
-        return publishedArtifacts
+    private fun publishFileAsync(build: AgentRunningBuild, file: File, path: String, pathPrefix: String) = async(CommonPool, CoroutineStart.DEFAULT) {
+        return@async try {
+            publishFile(build, file, path, pathPrefix)
+        } catch (e: Throwable) {
+            val filePath = GoogleFileUtils.normalizePath(path, file.name)
+            val message = "Failed to publish artifact $filePath: ${e.message}"
+            LOG.infoAndDebugDetails(message, e)
+            throw ArtifactPublishingFailedException(message, false, e)
+        }
     }
 
     // Upload artifact using resumable method:
-    // // https://cloud.google.com/storage/docs/xml-api/resumable-upload
+    // https://cloud.google.com/storage/docs/xml-api/resumable-upload
     private fun publishFile(build: AgentRunningBuild, file: File, path: String, pathPrefix: String): ArtifactDataInstance {
         val filePath = GoogleFileUtils.normalizePath(path, file.name)
         val blobName = GoogleFileUtils.normalizePath(pathPrefix, filePath)
@@ -129,7 +131,7 @@ class GoogleSignedUrlFileUploader : GoogleFileUploader {
 
     companion object {
         private val LOG = Logger.getInstance(GoogleSignedUrlFileUploader::class.java.name)
-        private val APPLICATION_XML = "application/xml"
-        private val UTF_8 = "UTF-8"
+        private const val APPLICATION_XML = "application/xml"
+        private const val UTF_8 = "UTF-8"
     }
 }
