@@ -33,10 +33,6 @@ class GoogleArtifactsPublisher(dispatcher: EventDispatcher<AgentLifeCycleListene
             override fun buildStarted(build: AgentRunningBuild) {
                 publishedArtifacts.clear()
             }
-
-            override fun afterAtrifactsPublished(build: AgentRunningBuild, status: BuildFinishedStatus) {
-                publishArtifactsList(build)
-            }
         })
     }
 
@@ -67,6 +63,7 @@ class GoogleArtifactsPublisher(dispatcher: EventDispatcher<AgentLifeCycleListene
 
                 throw ArtifactPublishingFailedException("$message: ${e.message}", false, e)
             }
+            publishArtifactsList(build)
         }
 
         return filesToPublish.size
