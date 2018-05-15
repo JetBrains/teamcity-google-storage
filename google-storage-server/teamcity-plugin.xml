@@ -11,6 +11,7 @@
             <name>JetBrains, s.r.o.</name>
             <url>http://www.jetbrains.com/</url>
         </vendor>
+        <requirements min-build="46654" />
     </info>
     <deployment use-separate-classloader="true"/>
 </teamcity-plugin>
