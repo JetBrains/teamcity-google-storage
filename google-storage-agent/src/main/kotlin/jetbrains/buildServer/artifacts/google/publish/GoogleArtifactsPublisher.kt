@@ -7,7 +7,6 @@
 
 package jetbrains.buildServer.artifacts.google.publish
 
-import com.google.cloud.storage.StorageException
 import com.intellij.openapi.diagnostic.Logger
 import jetbrains.buildServer.ArtifactsConstants
 import jetbrains.buildServer.agent.*
@@ -17,6 +16,7 @@ import jetbrains.buildServer.log.LogUtil
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleConstants
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleConstants.PATH_PREFIX_ATTR
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleConstants.PATH_PREFIX_SYSTEM_PROPERTY
+import jetbrains.buildServer.serverSide.artifacts.google.GoogleUtils
 import jetbrains.buildServer.util.EventDispatcher
 import java.io.File
 import java.io.IOException
@@ -27,11 +27,13 @@ class GoogleArtifactsPublisher(dispatcher: EventDispatcher<AgentLifeCycleListene
     : ArtifactsPublisher {
 
     private val publishedArtifacts = arrayListOf<ArtifactDataInstance>()
+    private var fileUploader: GoogleFileUploader? = null
 
     init {
         dispatcher.addListener(object : AgentLifeCycleAdapter() {
             override fun buildStarted(build: AgentRunningBuild) {
                 publishedArtifacts.clear()
+                fileUploader = null
             }
         })
     }
@@ -48,19 +50,15 @@ class GoogleArtifactsPublisher(dispatcher: EventDispatcher<AgentLifeCycleListene
                     setPathPrefixProperty(build)
                 }
 
-                val uploader = GoogleFileUploaderFactory.getFileUploader(build)
+                val uploader = getFileUploader(build)
                 val pathPrefix = getPathPrefixProperty(build)
                 val published = uploader.publishFiles(build, pathPrefix, filesToPublish)
                 publishedArtifacts.addAll(published)
+            } catch (e: ArtifactPublishingFailedException) {
+                throw e
             } catch (e: Throwable) {
                 val message = "Failed to publish files"
                 LOG.warnAndDebugDetails(message, e)
-
-                if (e is StorageException) {
-                    LOG.warn(e.message)
-                    build.buildLogger.error(e.message)
-                }
-
                 throw ArtifactPublishingFailedException("$message: ${e.message}", false, e)
             }
             publishArtifactsList(build)
@@ -86,6 +84,16 @@ class GoogleArtifactsPublisher(dispatcher: EventDispatcher<AgentLifeCycleListene
         }
     }
 
+    private fun getFileUploader(build: AgentRunningBuild): GoogleFileUploader {
+        val uploader = fileUploader ?: if (GoogleUtils.useSignedUrls(build.artifactStorageSettings)) {
+            GoogleSignedUrlFileUploader()
+        } else {
+            GoogleRegularFileUploader()
+        }
+        fileUploader = uploader
+        return uploader
+    }
+
     private fun setPathPrefixProperty(build: AgentRunningBuild) {
         val pathPrefix = GoogleFileUtils.getPathPrefix(build)
         build.addSharedSystemProperty(PATH_PREFIX_SYSTEM_PROPERTY, pathPrefix)
@@ -98,6 +106,6 @@ class GoogleArtifactsPublisher(dispatcher: EventDispatcher<AgentLifeCycleListene
 
     companion object {
         private val LOG = Logger.getInstance(GoogleArtifactsPublisher::class.java.name)
-        private val ERROR_PUBLISHING_ARTIFACTS_LIST = "Error publishing artifacts list"
+        private const val ERROR_PUBLISHING_ARTIFACTS_LIST = "Error publishing artifacts list"
     }
 }
