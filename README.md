@@ -5,10 +5,6 @@
 https://teamcity.jetbrains.com/app/rest/builds/buildType:(id:TeamCityPluginsByJetBrains_TeamcityGoogleStorage_Build)/statusIcon.svg)](https://teamcity.jetbrains.com/viewType.html?buildTypeId=TeamCityPluginsByJetBrains_TeamcityGoogleStorage_Build&guest=1)
 
 This plugin allows replacing the TeamCity built-in artifacts storage by [Google Cloud Storage](https://cloud.google.com/storage/). The artifacts storage can be changed at the project level. After changing the storage, new artifacts produced by the builds of this project will be published to the Google Cloud Storage bucket. Besides publishing, the plugin also implements resolving of artifact dependencies and clean-up of build artifacts.
-
-# State
-
-The plugin has complete baseline functionality, but it is not yet ready to be used in production and further plugin updates may break backward compatibility (regarding settings, data storage, etc.).
  
 # Features
 
