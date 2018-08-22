@@ -5,6 +5,7 @@ import jetbrains.buildServer.agent.ServerProvidedProperties
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleConstants
 import jetbrains.buildServer.util.FileUtil
 import java.io.File
+import java.lang.reflect.Method
 import java.net.URLConnection
 
 object GoogleFileUtils {
@@ -44,8 +45,38 @@ object GoogleFileUtils {
     }
 
     fun getContentType(file: File): String {
-        return URLConnection.guessContentTypeFromName(file.name) ?: "application/octet-stream"
+        URLConnection.guessContentTypeFromName(file.name)?.let {
+            return it
+        }
+        probeContentTypeMethod?.let { contentTypeMethod ->
+            try {
+                File::class.java.getMethod("toPath")?.let { toPathMethod ->
+                    contentTypeMethod.invoke(null, toPathMethod.invoke(file))?.let {
+                        if (it is String) {
+                            return it
+                        }
+                    }
+                }
+            } catch (ignored: Exception) {
+                ignored.printStackTrace()
+            }
+        }
+        return DEFAULT_CONTENT_TYPE
     }
 
-    private val SLASH = '/'
+    private fun getProbeContentTypeMethod(): Method? {
+        try {
+            val filesClass = Class.forName("java.nio.file.Files")
+            val pathClass = Class.forName("java.nio.file.Path")
+            if (filesClass != null && pathClass != null) {
+                return filesClass.getMethod("probeContentType", pathClass)
+            }
+        } catch (ignored: Exception) {
+        }
+        return null
+    }
+
+    private const val SLASH = '/'
+    private const val DEFAULT_CONTENT_TYPE = "application/octet-stream"
+    private val probeContentTypeMethod: Method? = getProbeContentTypeMethod()
 }
