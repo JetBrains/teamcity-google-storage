@@ -35,7 +35,7 @@
             <label for="${cons.credentialsKey}">JSON private key</label>
             <span class="smallNote">Specify private key for service account</span>
             <br/>
-            <a href="https://console.cloud.google.com/iam-admin/" target="_blank">Open IAM Console</a>
+            <a href="https://console.cloud.google.com/iam-admin/" target="_blank" rel="noopener noreferrer">Open IAM Console</a>
         </td>
     </tr>
     <tr id="access-key-selector">
@@ -82,8 +82,8 @@
                 </div>
                 <div class="longField inline-block" id="buckets-error">
                 <span class="error option-error">
-                    No buckets found. <a href="https://console.cloud.google.com/iam-admin/iam/project" target="_blank">Check permissions</a> or
-                    <a href="https://console.cloud.google.com/storage/browser" target="_blank">create a new bucket</a>.
+                    No buckets found. <a href="https://console.cloud.google.com/iam-admin/iam/project" target="_blank" rel="noopener noreferrer">Check permissions</a> or
+                    <a href="https://console.cloud.google.com/storage/browser" target="_blank" rel="noopener noreferrer">create a new bucket</a>.
                 </span>
                 </div>
             </div>
@@ -95,7 +95,7 @@
         <th class="noBorder">Options:</th>
         <td>
             <props:checkboxProperty name="${cons.useSignedUrlForUpload}"/>
-            <label for="${cons.useSignedUrlForUpload}">Use <a href="https://cloud.google.com/storage/docs/access-control/signed-urls" target="_blank">signed URLs</a> for artifacts upload</label>
+            <label for="${cons.useSignedUrlForUpload}">Use <a href="https://cloud.google.com/storage/docs/access-control/signed-urls" target="_blank" rel="noopener noreferrer">signed URLs</a> for artifacts upload</label>
             <span class="smallNote">Prevents exposing security credentials to build agents.</span>
         </td>
     </tr>
