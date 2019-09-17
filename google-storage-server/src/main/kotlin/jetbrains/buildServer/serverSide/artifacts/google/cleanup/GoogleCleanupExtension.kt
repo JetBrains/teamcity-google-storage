@@ -8,17 +8,16 @@
 package jetbrains.buildServer.serverSide.artifacts.google.cleanup
 
 import com.google.cloud.storage.Bucket
-import jetbrains.buildServer.artifacts.ArtifactListData
 import jetbrains.buildServer.artifacts.ServerArtifactStorageSettingsProvider
 import jetbrains.buildServer.log.Loggers
-import jetbrains.buildServer.serverSide.SBuild
 import jetbrains.buildServer.serverSide.artifacts.ServerArtifactHelper
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleConstants
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleUtils
 import jetbrains.buildServer.serverSide.cleanup.BuildCleanupContext
+import jetbrains.buildServer.serverSide.cleanup.BuildCleanupContextEx
 import jetbrains.buildServer.serverSide.cleanup.CleanupExtension
 import jetbrains.buildServer.serverSide.cleanup.CleanupProcessState
-import jetbrains.buildServer.serverSide.impl.cleanup.HistoryRetentionPolicy
+import jetbrains.buildServer.serverSide.impl.cleanup.ArtifactPathsEvaluator
 import jetbrains.buildServer.util.StringUtil
 import jetbrains.buildServer.util.positioning.PositionAware
 import jetbrains.buildServer.util.positioning.PositionConstraint
@@ -32,13 +31,10 @@ class GoogleCleanupExtension(private val helper: ServerArtifactHelper,
     override fun cleanupBuildsData(cleanupContext: BuildCleanupContext) {
         for (build in cleanupContext.builds) {
             val artifactsInfo = helper.getArtifactList(build) ?: continue
-            val properties = artifactsInfo.commonProperties
-            val pathPrefix = GoogleUtils.getPathPrefix(properties) ?: continue
+            val pathPrefix = GoogleUtils.getPathPrefix(artifactsInfo.commonProperties) ?: continue
 
-            val patterns = getPatternsForBuild(cleanupContext, build)
-            val toDelete = getPathsToDelete(artifactsInfo, patterns)
-
-            if (toDelete.isEmpty()) continue
+            val pathsToDelete = ArtifactPathsEvaluator.getPathsToDelete(cleanupContext as BuildCleanupContextEx, build, artifactsInfo)
+            if (pathsToDelete.isEmpty()) continue
 
             val parameters = settingsProvider.getStorageSettings(build)
             val bucket: Bucket
@@ -50,8 +46,8 @@ class GoogleCleanupExtension(private val helper: ServerArtifactHelper,
             }
 
             var succeededNum = 0
-            val blobs = toDelete.map {
-                GoogleUtils.getArtifactPath(properties, it)
+            val blobs = pathsToDelete.map {
+                GoogleUtils.getArtifactPath(artifactsInfo.commonProperties, it)
             }
 
             bucket.get(blobs)?.filterNotNull()?.forEach {
@@ -66,7 +62,7 @@ class GoogleCleanupExtension(private val helper: ServerArtifactHelper,
             val suffix = " from bucket [${bucket.name}] from path [$pathPrefix]"
             Loggers.CLEANUP.info("Removed [" + succeededNum + "] Google Storage " + StringUtil.pluralize("blob", succeededNum) + suffix)
 
-            helper.removeFromArtifactList(build, toDelete)
+            helper.removeFromArtifactList(build, pathsToDelete)
         }
     }
 
@@ -75,14 +71,4 @@ class GoogleCleanupExtension(private val helper: ServerArtifactHelper,
 
     override fun getConstraint() = PositionConstraint.first()
 
-    private fun getPatternsForBuild(cleanupContext: BuildCleanupContext, build: SBuild): String {
-        if (cleanupContext.cleanupLevel.isCleanHistoryEntry) return StringUtil.EMPTY
-        val policy = cleanupContext.getCleanupPolicyForBuild(build.buildId)
-        return StringUtil.emptyIfNull(policy.parameters[HistoryRetentionPolicy.ARTIFACT_PATTERNS_PARAM])
-    }
-
-    private fun getPathsToDelete(artifactsInfo: ArtifactListData, patterns: String): List<String> {
-        val keys = artifactsInfo.artifactList.map { it.path }
-        return PathPatternFilter(patterns).filterPaths(keys)
-    }
 }
