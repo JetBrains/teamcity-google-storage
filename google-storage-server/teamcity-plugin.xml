@@ -8,7 +8,7 @@
         <description>Allows storing build artifacts in a Google storage bucket</description>
         <download-url>https://github.com/JetBrains/teamcity-google-storage</download-url>
         <vendor>
-            <name>JetBrains, s.r.o.</name>
+            <name>JetBrains</name>
             <url>http://www.jetbrains.com/</url>
         </vendor>
     </info>
