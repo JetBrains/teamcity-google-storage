@@ -28,13 +28,16 @@ ext {
 group = projectIds.group
 version = projectIds.version
 
-repositories {
-    mavenCentral()
-}
-
 allprojects {
     group = projectIds.group
     version = projectIds.version
+
+    repositories {
+        maven { url "https://download.jetbrains.com/teamcity-repository" }
+        maven { url "https://repository.jetbrains.com/all" }
+        mavenCentral()
+        google()
+    }
 }
 
 subprojects {

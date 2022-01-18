@@ -16,7 +16,6 @@
 
 package jetbrains.buildServer.serverSide.artifacts.google.signedUrl
 
-import com.google.api.client.util.escape.CharEscapers
 import com.google.cloud.storage.BlobInfo
 import com.google.cloud.storage.HttpMethod
 import com.google.cloud.storage.Storage
@@ -27,7 +26,6 @@ import jetbrains.buildServer.serverSide.artifacts.google.GoogleUtils
 import java.util.concurrent.TimeUnit
 
 class GoogleSignedUrlProviderImpl : GoogleSignedUrlProvider {
-
     private val myLinksCache = CacheBuilder.newBuilder()
             .expireAfterWrite(urlLifetimeSec.toLong(), TimeUnit.SECONDS)
             .maximumSize(200)
@@ -42,7 +40,7 @@ class GoogleSignedUrlProviderImpl : GoogleSignedUrlProvider {
         val lifeTime = urlLifetimeSec
         val resolver = {
             val bucket = GoogleUtils.getStorageBucket(parameters)
-            val blobInfo = BlobInfo.newBuilder(bucket, CharEscapers.escapeUriQuery(path))
+            val blobInfo = BlobInfo.newBuilder(bucket, path)
             val urlOptions = arrayListOf<Storage.SignUrlOption>(Storage.SignUrlOption.httpMethod(httpMethod))
             if (httpMethod.name() == "POST") {
                 urlOptions.add(Storage.SignUrlOption.withExtHeaders(mapOf("x-goog-resumable" to "start")))
