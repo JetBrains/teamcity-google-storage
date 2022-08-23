@@ -26,16 +26,19 @@ class GoogleFileUtilsTest {
     @DataProvider
     fun getContentTypeData(): Array<Array<Any?>> {
         return arrayOf(
-                arrayOf<Any?>("file.css", "text/css"),
-                arrayOf<Any?>("file.zip", "application/zip"),
-                arrayOf<Any?>("file.txt", "text/plain"),
-                arrayOf<Any?>("file.jpg", "image/jpeg"),
-                arrayOf<Any?>("file.bin", "application/octet-stream")
+            arrayOf("file.css", "text/css"),
+            arrayOf("file.zip", "application/zip"),
+            arrayOf("file.txt", "text/plain"),
+            arrayOf("file.jpg", "image/jpeg"),
+            arrayOf("file.bin", "application/octet-stream")
         )
     }
 
     @Test(dataProvider = "getContentTypeData")
     fun getContentTypeTest(fileName: String, expectedType: String) {
-        Assert.assertEquals(GoogleFileUtils.getContentType(File("GoogleFileUtilsTest/$fileName")), expectedType)
+        Assert.assertEquals(GoogleFileUtils.getContentType(getResourceAsFile("/GoogleFileUtilsTest/$fileName")), expectedType)
     }
+
+    private fun getResourceAsFile(path: String): File =
+        this.javaClass.getResource(path)?.path?.let { File(it) }!!
 }

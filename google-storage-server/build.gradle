@@ -15,7 +15,7 @@
  */
 
 plugins {
-    id 'com.github.rodm.teamcity-server' version "1.0"
+    id 'com.github.rodm.teamcity-server' version "1.4.1"
 }
 
 teamcity {
@@ -27,10 +27,10 @@ teamcity {
 }
 
 dependencies {
-    compile project(':google-storage-common')
-    compile "org.jetbrains.kotlin:kotlin-stdlib"
-    provided "org.jetbrains.teamcity:server-api:${teamcityVersion}"
-    provided "org.jetbrains.teamcity.internal:server:${teamcityVersion}"
+    implementation project(':google-storage-common')
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+    api "org.jetbrains.teamcity:server-api:${teamcityVersion}"
+    api "org.jetbrains.teamcity.internal:server:${teamcityVersion}"
 
     agent project(path: ':google-storage-agent', configuration: 'plugin')
 }

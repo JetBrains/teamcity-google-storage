@@ -20,6 +20,7 @@ import jetbrains.buildServer.agent.AgentRunningBuild
 import jetbrains.buildServer.agent.ServerProvidedProperties
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleConstants
 import jetbrains.buildServer.util.FileUtil
+import org.apache.tika.Tika
 import java.io.File
 import java.lang.reflect.Method
 import java.net.URLConnection
@@ -50,11 +51,13 @@ object GoogleFileUtils {
             pathSegments.add(build.buildTypeExternalId)
             pathSegments.add(build.buildId.toString())
         } else {
-            pathSegments.addAll(pathPrefix
+            pathSegments.addAll(
+                pathPrefix
                     .trim()
                     .replace('\\', SLASH)
                     .split(SLASH)
-                    .filter { it.isNotEmpty() })
+                    .filter { it.isNotEmpty() }
+            )
         }
 
         return pathSegments.joinToString("$SLASH")
@@ -64,6 +67,7 @@ object GoogleFileUtils {
         URLConnection.guessContentTypeFromName(file.name)?.let {
             return it
         }
+
         if (probeContentTypeMethod != null && fileToPathMethod != null) {
             try {
                 probeContentTypeMethod.invoke(null, fileToPathMethod.invoke(file))?.let {
@@ -74,6 +78,12 @@ object GoogleFileUtils {
             } catch (ignored: Exception) {
             }
         }
+
+        try {
+            return tikaDefaultContext.detect(file)
+        } catch (ignored: Exception) {
+        }
+
         return DEFAULT_CONTENT_TYPE
     }
 
@@ -97,6 +107,7 @@ object GoogleFileUtils {
         return null
     }
 
+    private val tikaDefaultContext = Tika()
     private const val SLASH = '/'
     private const val DEFAULT_CONTENT_TYPE = "application/octet-stream"
     private val probeContentTypeMethod: Method? = getProbeContentTypeMethod()

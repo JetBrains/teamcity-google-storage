@@ -16,7 +16,12 @@
 
 package jetbrains.buildServer.artifacts.google.publish
 
-import com.google.api.client.http.*
+import com.google.api.client.http.ByteArrayContent
+import com.google.api.client.http.EmptyContent
+import com.google.api.client.http.GenericUrl
+import com.google.api.client.http.HttpBackOffUnsuccessfulResponseHandler
+import com.google.api.client.http.HttpResponse
+import com.google.api.client.http.HttpTransport
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.util.ExponentialBackOff
 import com.intellij.openapi.diagnostic.Logger
@@ -25,37 +30,50 @@ import jetbrains.buildServer.agent.ArtifactPublishingFailedException
 import jetbrains.buildServer.artifacts.ArtifactDataInstance
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleConstants
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleSignedUrlHelper
-import kotlinx.coroutines.experimental.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.IOException
-import java.util.concurrent.TimeUnit
 
 class GoogleSignedUrlFileUploader : GoogleFileUploader {
 
     private val requestFactory = HTTP_TRANSPORT.createRequestFactory()
 
-    override fun publishFiles(build: AgentRunningBuild,
-                              pathPrefix: String,
-                              filesToPublish: Map<File, String>) = runBlocking {
-        return@runBlocking filesToPublish.map({ (file, path) ->
+    override fun publishFiles(
+        build: AgentRunningBuild,
+        pathPrefix: String,
+        filesToPublish: Map<File, String>
+    ) = runBlocking {
+        return@runBlocking filesToPublish.map { (file, path) ->
             publishFileAsync(build, file, path, pathPrefix)
-        }).map { it.await() }
+        }.map { it.await() }
     }
 
-    private fun publishFileAsync(build: AgentRunningBuild, file: File, path: String, pathPrefix: String) = async(CommonPool, CoroutineStart.DEFAULT) {
-        try {
-            publishFile(build, file, path, pathPrefix).await()
-        } catch (e: Throwable) {
-            val filePath = GoogleFileUtils.normalizePath(path, file.name)
-            val message = "Failed to publish artifact $filePath: ${e.message}"
-            LOG.infoAndDebugDetails(message, e)
-            throw ArtifactPublishingFailedException(message, false, e)
+    private suspend fun publishFileAsync(build: AgentRunningBuild, file: File, path: String, pathPrefix: String) =
+        coroutineScope {
+            async(Dispatchers.IO) {
+                try {
+                    publishFile(build, file, path, pathPrefix)
+                } catch (e: Throwable) {
+                    val filePath = GoogleFileUtils.normalizePath(path, file.name)
+                    val message = "Failed to publish artifact $filePath: ${e.message}"
+                    LOG.infoAndDebugDetails(message, e)
+                    throw ArtifactPublishingFailedException(message, false, e)
+                }
+            }
         }
-    }
 
     // Upload artifact using resumable method:
     // https://cloud.google.com/storage/docs/xml-api/resumable-upload
-    private fun publishFile(build: AgentRunningBuild, file: File, path: String, pathPrefix: String) = async(CommonPool, CoroutineStart.DEFAULT) {
+    private suspend fun publishFile(
+        build: AgentRunningBuild,
+        file: File,
+        path: String,
+        pathPrefix: String
+    ): ArtifactDataInstance {
         val filePath = GoogleFileUtils.normalizePath(path, file.name)
         val blobName = GoogleFileUtils.normalizePath(pathPrefix, filePath)
         val contentType = GoogleFileUtils.getContentType(file)
@@ -82,13 +100,13 @@ class GoogleSignedUrlFileUploader : GoogleFileUploader {
 
             response = putRequest.execute()
             if (response.isSuccessStatusCode) {
-                return@async ArtifactDataInstance.create(filePath, fileLength)
+                return ArtifactDataInstance.create(filePath, fileLength)
             } else if (HttpBackOffUnsuccessfulResponseHandler.BackOffRequired.ON_SERVER_ERROR.isRequired(response)) {
                 backOffInterval = backOff.nextBackOffMillis()
                 val error = getHttpError(response)
                 if (backOffInterval != ExponentialBackOff.STOP) {
                     build.buildLogger.message("Failed to publish artifact $filePath: $error. Will retry in ${backOffInterval / 1000} seconds.")
-                    delay(backOffInterval, TimeUnit.MILLISECONDS)
+                    delay(backOffInterval)
                 } else {
                     throw IOException(error)
                 }
@@ -130,10 +148,14 @@ class GoogleSignedUrlFileUploader : GoogleFileUploader {
 
     private fun getSignedUrl(build: AgentRunningBuild, blobName: String, contentType: String): String {
         val agentConfiguration = build.agentConfiguration
-        val targetUrl = "${agentConfiguration.serverUrl}/httpAuth/plugins/${GoogleConstants.STORAGE_TYPE}/${GoogleConstants.SIGNED_URL_PATH}.html"
+        val targetUrl =
+            "${agentConfiguration.serverUrl}/httpAuth/plugins/${GoogleConstants.STORAGE_TYPE}/${GoogleConstants.SIGNED_URL_PATH}.html"
         val blobPaths = GoogleSignedUrlHelper.writeBlobPaths(mapOf(blobName to contentType))
 
-        val postRequest = requestFactory.buildPostRequest(GenericUrl(targetUrl), ByteArrayContent(APPLICATION_XML, blobPaths.toByteArray()))
+        val postRequest = requestFactory.buildPostRequest(
+            GenericUrl(targetUrl),
+            ByteArrayContent(APPLICATION_XML, blobPaths.toByteArray())
+        )
         postRequest.unsuccessfulResponseHandler = HttpBackOffUnsuccessfulResponseHandler(ExponentialBackOff())
         postRequest.headers.setBasicAuthentication(build.accessUser, build.accessCode)
 

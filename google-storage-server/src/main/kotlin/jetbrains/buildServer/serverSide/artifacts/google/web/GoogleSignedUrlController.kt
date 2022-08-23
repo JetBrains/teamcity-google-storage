@@ -30,20 +30,20 @@ import jetbrains.buildServer.serverSide.artifacts.google.GoogleSignedUrlHelper
 import jetbrains.buildServer.serverSide.artifacts.google.signedUrl.GoogleSignedUrlProvider
 import jetbrains.buildServer.web.openapi.PluginDescriptor
 import jetbrains.buildServer.web.openapi.WebControllerManager
-import org.apache.commons.io.IOUtils
 import org.springframework.web.servlet.ModelAndView
 import java.io.IOException
 import java.net.URL
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
-class GoogleSignedUrlController(server: SBuildServer,
-                                manager: WebControllerManager,
-                                descriptor: PluginDescriptor,
-                                private val runningBuildsCollection: RunningBuildsCollection,
-                                private val storageSettingsProvider: ServerArtifactStorageSettingsProvider,
-                                private val signedUrlProvider: GoogleSignedUrlProvider)
-    : BaseController(server) {
+class GoogleSignedUrlController(
+    server: SBuildServer,
+    manager: WebControllerManager,
+    descriptor: PluginDescriptor,
+    private val runningBuildsCollection: RunningBuildsCollection,
+    private val storageSettingsProvider: ServerArtifactStorageSettingsProvider,
+    private val signedUrlProvider: GoogleSignedUrlProvider
+) : BaseController(server) {
 
     init {
         val path = descriptor.getPluginResourcesPath(GoogleConstants.SIGNED_URL_PATH + ".html")
@@ -65,7 +65,7 @@ class GoogleSignedUrlController(server: SBuildServer,
 
         val parameters = storageSettingsProvider.getStorageSettings(runningBuild)
 
-        val blobPaths = GoogleSignedUrlHelper.readBlobPaths(IOUtils.toString(request.reader))
+        val blobPaths = GoogleSignedUrlHelper.readBlobPaths(request.reader.readText())
         if (blobPaths.isEmpty()) {
             LOG.debug("Failed to provide signed urls for request $request. Blob paths collection is empty.")
             response.sendError(HttpServletResponse.SC_BAD_REQUEST)
@@ -79,11 +79,17 @@ class GoogleSignedUrlController(server: SBuildServer,
             }
             response.writer.append(GoogleSignedUrlHelper.writeSignedUrlMapping(data))
         } catch (e: IOException) {
-            LOG.infoAndDebugDetails("Failed to resolve signed upload urls for artifacts of build " + runningBuild.buildId, e)
+            LOG.infoAndDebugDetails(
+                "Failed to resolve signed upload urls for artifacts of build " + runningBuild.buildId,
+                e
+            )
             response.status = HttpServletResponse.SC_BAD_GATEWAY
             response.writer.append(e.message)
         } catch (e: Exception) {
-            LOG.warnAndDebugDetails("Unexpected error while resolving signed upload urls for artifacts of build " + runningBuild.buildId, e)
+            LOG.warnAndDebugDetails(
+                "Unexpected error while resolving signed upload urls for artifacts of build " + runningBuild.buildId,
+                e
+            )
             response.status = HttpServletResponse.SC_BAD_GATEWAY
             response.writer.append(e.message)
         }

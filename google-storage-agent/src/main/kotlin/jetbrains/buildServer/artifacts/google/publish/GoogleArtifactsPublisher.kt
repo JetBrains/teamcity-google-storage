@@ -18,7 +18,12 @@ package jetbrains.buildServer.artifacts.google.publish
 
 import com.intellij.openapi.diagnostic.Logger
 import jetbrains.buildServer.ArtifactsConstants
-import jetbrains.buildServer.agent.*
+import jetbrains.buildServer.agent.AgentLifeCycleAdapter
+import jetbrains.buildServer.agent.AgentLifeCycleListener
+import jetbrains.buildServer.agent.AgentRunningBuild
+import jetbrains.buildServer.agent.ArtifactPublishingFailedException
+import jetbrains.buildServer.agent.ArtifactsPublisher
+import jetbrains.buildServer.agent.CurrentBuildTracker
 import jetbrains.buildServer.agent.artifacts.AgentArtifactHelper
 import jetbrains.buildServer.artifacts.ArtifactDataInstance
 import jetbrains.buildServer.log.LogUtil
@@ -30,10 +35,12 @@ import jetbrains.buildServer.util.EventDispatcher
 import java.io.File
 import java.io.IOException
 
-class GoogleArtifactsPublisher(dispatcher: EventDispatcher<AgentLifeCycleListener>,
-                               private val helper: AgentArtifactHelper,
-                               private val tracker: CurrentBuildTracker)
-    : ArtifactsPublisher {
+class GoogleArtifactsPublisher(
+    dispatcher: EventDispatcher<AgentLifeCycleListener>,
+    private val helper: AgentArtifactHelper,
+    private val tracker: CurrentBuildTracker
+) :
+    ArtifactsPublisher {
 
     private val publishedArtifacts = arrayListOf<ArtifactDataInstance>()
     private var fileUploader: GoogleFileUploader? = null
@@ -50,7 +57,7 @@ class GoogleArtifactsPublisher(dispatcher: EventDispatcher<AgentLifeCycleListene
     override fun publishFiles(filePathMap: Map<File, String>): Int {
         val filesToPublish = filePathMap.entries.filter {
             !it.value.startsWith(ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR)
-        }.associateTo(hashMapOf(), { entry -> entry.toPair() })
+        }.associateTo(hashMapOf()) { entry -> entry.toPair() }
 
         if (filesToPublish.isNotEmpty()) {
             val build = tracker.currentBuild
@@ -109,8 +116,12 @@ class GoogleArtifactsPublisher(dispatcher: EventDispatcher<AgentLifeCycleListene
     }
 
     private fun getPathPrefixProperty(build: AgentRunningBuild): String {
-        return build.sharedBuildParameters.systemProperties[PATH_PREFIX_SYSTEM_PROPERTY] ?:
-                throw ArtifactPublishingFailedException("No $PATH_PREFIX_SYSTEM_PROPERTY build system property found", false, null)
+        return build.sharedBuildParameters.systemProperties[PATH_PREFIX_SYSTEM_PROPERTY]
+            ?: throw ArtifactPublishingFailedException(
+                "No $PATH_PREFIX_SYSTEM_PROPERTY build system property found",
+                false,
+                null
+            )
     }
 
     companion object {
