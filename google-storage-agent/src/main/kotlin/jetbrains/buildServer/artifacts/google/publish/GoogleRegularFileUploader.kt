@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2021 JetBrains s.r.o.
+ * Copyright 2000-2022 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,14 @@
 package jetbrains.buildServer.artifacts.google.publish
 
 import com.google.api.client.util.ExponentialBackOff
-import com.google.cloud.storage.Bucket
 import com.google.cloud.storage.StorageException
-import com.intellij.openapi.diagnostic.Logger
 import jetbrains.buildServer.agent.AgentRunningBuild
-import jetbrains.buildServer.agent.ArtifactPublishingFailedException
 import jetbrains.buildServer.artifacts.ArtifactDataInstance
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleUtils
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileInputStream
 
@@ -40,60 +35,46 @@ class GoogleRegularFileUploader : GoogleFileUploader {
         pathPrefix: String,
         filesToPublish: Map<File, String>
     ) = runBlocking {
-        val bucket = GoogleUtils.getStorageBucket(build.artifactStorageSettings)
-        return@runBlocking filesToPublish.map { (file, path) ->
-            publishArtifactAsync(build, bucket, pathPrefix, file, path)
-        }.map { it.await() }
-    }
+        var bucket = GoogleUtils.getStorageBucket(build.artifactStorageSettings)
 
-    private suspend fun publishArtifactAsync(
-        build: AgentRunningBuild,
-        bucket: Bucket,
-        pathPrefix: String,
-        file: File,
-        path: String
-    ): Deferred<ArtifactDataInstance> = coroutineScope {
-        async(Dispatchers.IO) {
-            val filePath = GoogleFileUtils.normalizePath(path, file.name)
-            val blobName = GoogleFileUtils.normalizePath(pathPrefix, filePath)
-            val contentType = GoogleFileUtils.getContentType(file)
-            val backOff = ExponentialBackOff()
-            var backOffInterval: Long = 0
+        filesToPublish.map { (file, path) ->
+            FilePublishingContext(file, path, pathPrefix)
+        }.map {
+            async(Dispatchers.IO) {
+                with(it) {
+                    exceptionsWrapper {
+                        retry(
+                            build.buildLogger,
+                            ExponentialBackOff(),
+                            {
+                                logExceptions(build.buildLogger) {
+                                    // lock self for better readability of the next block
+                                    val context = this
 
-            while (backOffInterval != ExponentialBackOff.STOP) {
-                try {
-                    FileInputStream(file).use {
-                        bucket.create(blobName, it, contentType)
-                        val length = file.length()
-                        return@async ArtifactDataInstance.create(filePath, length)
-                    }
-                } catch (e: Throwable) {
-                    val message = "Failed to publish artifact $filePath: ${e.message}"
-                    LOG.infoAndDebugDetails(message, e)
-
-                    if (e is StorageException) {
-                        if (e.isRetryable) {
-                            LOG.info(e.message)
-                            backOffInterval = backOff.nextBackOffMillis()
-                            if (backOffInterval != ExponentialBackOff.STOP) {
-                                build.buildLogger.message("Failed to publish artifact $filePath: ${e.message}. Will retry in ${backOffInterval / 1000} seconds.")
-                                delay(backOffInterval)
-                                continue
+                                    // ensure correct context
+                                    // otherwise there is a possibility of context switch
+                                    // Dispatchers.IO provides more threads for parallel work
+                                    withContext(Dispatchers.IO) {
+                                        FileInputStream(context.file).use { fis ->
+                                            bucket.create(context.blobName, fis, context.contentType)
+                                            ArtifactDataInstance.create(context.filePath, context.file.length())
+                                        }
+                                    }
+                                }
+                            },
+                            { err ->
+                                // Reconnect to the cloud with fresh token
+                                // if current exception isn't retryable storage exception.
+                                // In some cases it is vital for correct upload to get fresh cloud token
+                                // to avoid com.google.cloud.resourcemanager.ResourceManagerException: Error getting access token for service account
+                                if (!(err is StorageException && err.isRetryable)) {
+                                    bucket = GoogleUtils.getStorageBucket(build.artifactStorageSettings)
+                                }
                             }
-                        }
-                        LOG.warn(e.message)
-                        build.buildLogger.error(e.message)
+                        )
                     }
-
-                    throw ArtifactPublishingFailedException(message, false, e)
                 }
             }
-
-            throw throw ArtifactPublishingFailedException("Unable to publish artifact $filePath", false, null)
-        }
-    }
-
-    companion object {
-        private val LOG = Logger.getInstance(GoogleRegularFileUploader::class.java.name)
+        }.map { it.await() }
     }
 }

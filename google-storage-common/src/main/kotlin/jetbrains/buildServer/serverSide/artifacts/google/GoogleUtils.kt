@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2021 JetBrains s.r.o.
+ * Copyright 2000-2022 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,8 +42,8 @@ object GoogleUtils {
             val factory = Utils.getDefaultJsonFactory()
             val parser = factory.createJsonParser(it)
             val json = parser.parse(GenericJson::class.java)
-            json[PROJECT_ID]?.let {
-                builder.setProjectId(it as String)
+            json[PROJECT_ID]?.let { id ->
+                builder.setProjectId(id as String)
             }
 
             it.reset()
@@ -67,6 +67,7 @@ object GoogleUtils {
         is JsonParseException -> {
             "Invalid key format"
         }
+
         is IllegalArgumentException -> {
             if (e.message?.contains("project ID is required") == true) {
                 "Invalid key: no project id"
@@ -74,6 +75,7 @@ object GoogleUtils {
                 "Invalid key: ${e.message}"
             }
         }
+
         else -> {
             "Invalid credentials: ${e.message}"
         }
