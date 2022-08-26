@@ -29,8 +29,7 @@ teamcity {
 dependencies {
     implementation project(':google-storage-common')
     implementation "org.jetbrains.kotlin:kotlin-stdlib"
-    api "org.jetbrains.teamcity:server-api:${teamcityVersion}"
-    api "org.jetbrains.teamcity.internal:server:${teamcityVersion}"
+    provided "org.jetbrains.teamcity.internal:server:${teamcityVersion}"
 
     agent project(path: ':google-storage-agent', configuration: 'plugin')
 }

@@ -24,6 +24,7 @@ import com.google.api.client.http.HttpResponse
 import com.google.api.client.http.HttpTransport
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.util.ExponentialBackOff
+import com.intellij.openapi.diagnostic.Logger
 import jetbrains.buildServer.agent.AgentRunningBuild
 import jetbrains.buildServer.artifacts.ArtifactDataInstance
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleConstants
@@ -125,6 +126,8 @@ class GoogleSignedUrlFileUploader : GoogleFileUploader {
     }
 
     private fun getLocationUrl(signedUrl: String, contentType: String): String {
+        LOG.debug("signed URL: $signedUrl")
+        LOG.debug("contentType: $contentType")
         val postRequest = requestFactory.buildPostRequest(GenericUrl(signedUrl), EmptyContent())
         postRequest.unsuccessfulResponseHandler = HttpBackOffUnsuccessfulResponseHandler(ExponentialBackOff())
         postRequest.headers.contentType = contentType
@@ -135,7 +138,9 @@ class GoogleSignedUrlFileUploader : GoogleFileUploader {
             throw IOException("Can't get upload location URL: ${getHttpError(response)}")
         }
 
-        return response.headers.location ?: throw IOException("Can't get upload location URL")
+        return response.headers.location.also {
+            LOG.debug("location URL: $it")
+        } ?: throw IOException("Can't get upload location URL")
     }
 
     private fun getSignedUrl(build: AgentRunningBuild, blobName: String, contentType: String): String {
@@ -165,5 +170,6 @@ class GoogleSignedUrlFileUploader : GoogleFileUploader {
     companion object {
         private const val APPLICATION_XML = "application/xml"
         val HTTP_TRANSPORT: HttpTransport = NetHttpTransport()
+        private val LOG = Logger.getInstance(GoogleSignedUrlFileUploader::class.java.name)
     }
 }

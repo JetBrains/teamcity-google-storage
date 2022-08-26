@@ -29,7 +29,10 @@ dependencies {
     implementation project(':google-storage-common')
     implementation "org.jetbrains.kotlin:kotlin-stdlib"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxVersion"
-    implementation "org.apache.tika:tika-core:2.4.1"
+    implementation ("org.apache.tika:tika-core:2.4.1") {
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+    }
+
     testImplementation 'org.testng:testng:6.8'
 }
 

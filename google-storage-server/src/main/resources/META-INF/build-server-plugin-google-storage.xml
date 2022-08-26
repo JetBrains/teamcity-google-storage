@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2000-2021 JetBrains s.r.o.
+  ~ Copyright 2000-2022 JetBrains s.r.o.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
   ~ limitations under the License.
   -->
 
-<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
-<beans default-autowire="constructor">
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd"
+       default-autowire="constructor">
     <bean class="jetbrains.buildServer.serverSide.artifacts.google.GoogleStorageType"/>
     <bean class="jetbrains.buildServer.serverSide.artifacts.google.GoogleArtifactContentProvider"/>
     <bean class="jetbrains.buildServer.serverSide.artifacts.google.cleanup.GoogleCleanupExtension"/>
