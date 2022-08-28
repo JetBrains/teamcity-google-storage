@@ -35,12 +35,13 @@ class GoogleRegularFileUploader : GoogleFileUploader {
         pathPrefix: String,
         filesToPublish: Map<File, String>
     ) = runBlocking {
-        var bucket = GoogleUtils.getStorageBucket(build.artifactStorageSettings)
+        val bucket = GoogleUtils.getStorageBucket(build.artifactStorageSettings)
 
         filesToPublish.map { (file, path) ->
             FilePublishingContext(file, path, pathPrefix)
         }.map {
             async(Dispatchers.IO) {
+                var scopedBucket = bucket
                 with(it) {
                     exceptionsWrapper {
                         retry(
@@ -56,7 +57,7 @@ class GoogleRegularFileUploader : GoogleFileUploader {
                                     // Dispatchers.IO provides more threads for parallel work
                                     withContext(Dispatchers.IO) {
                                         FileInputStream(context.file).use { fis ->
-                                            bucket.create(context.blobName, fis, context.contentType)
+                                            scopedBucket.create(context.blobName, fis, context.contentType)
                                             ArtifactDataInstance.create(context.filePath, context.file.length())
                                         }
                                     }
@@ -68,7 +69,7 @@ class GoogleRegularFileUploader : GoogleFileUploader {
                                 // In some cases it is vital for correct upload to get fresh cloud token
                                 // to avoid com.google.cloud.resourcemanager.ResourceManagerException: Error getting access token for service account
                                 if (!(err is StorageException && err.isRetryable)) {
-                                    bucket = GoogleUtils.getStorageBucket(build.artifactStorageSettings)
+                                    scopedBucket = GoogleUtils.getStorageBucket(build.artifactStorageSettings)
                                 }
                             }
                         )
