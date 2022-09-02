@@ -28,7 +28,7 @@ class GoogleArtifactContentProvider : ArtifactContentProvider {
 
     override fun getContent(artifactInfo: StoredBuildArtifactInfo): InputStream {
         val artifactData = artifactInfo.artifactData
-                ?: throw IOException("Can not process artifact download request for a folder")
+            ?: throw IOException("Can not process artifact download request for a folder")
 
         val path = GoogleUtils.getArtifactPath(artifactInfo.commonProperties, artifactData.path)
 
@@ -38,7 +38,8 @@ class GoogleArtifactContentProvider : ArtifactContentProvider {
             return Channels.newInputStream(blob.reader())
         } catch (e: StorageException) {
             val errorType = if (e.isRetryable) "intermittent" else ""
-            val message = "Failed to access artifact $path due to $errorType Google Cloud Storage error, try to access it later"
+            val message =
+                "Failed to access artifact $path due to $errorType Google Cloud Storage error, try to access it later"
             LOG.infoAndDebugDetails(message, e)
             throw IOException("$message: $e.message", e)
         } catch (e: Throwable) {

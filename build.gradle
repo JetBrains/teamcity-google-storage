@@ -15,14 +15,14 @@
  */
 
 plugins {
-    id "org.jetbrains.kotlin.jvm" version "1.2.61"
+    id "org.jetbrains.kotlin.jvm" version "1.6.21"
 }
 
 ext {
     def correctVersion = project.hasProperty('versionNumber') && property('versionNumber') ==~ /\d+\.\d+\.\d+.*/
     versionNumber = correctVersion ? property('versionNumber') : 'SNAPSHOT-' + new Date().format('yyyyMMddHHmmss')
     projectIds = ['group': 'teamcity-google-storage', 'version': versionNumber, 'artifact': 'google-artifact-storage']
-    teamcityVersion = project.hasProperty('teamcityVersion') ? property('teamcityVersion') : '2019.2-SNAPSHOT'
+    teamcityVersion = project.hasProperty('teamcityVersion') ? property('teamcityVersion') : '2022.08'
 }
 
 group = projectIds.group
@@ -45,8 +45,4 @@ subprojects {
 
     test.useTestNG()
     jar.version = null
-}
-
-task wrapper(type: Wrapper) {
-    gradleVersion = '4.9'
 }
