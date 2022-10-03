@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2021 JetBrains s.r.o.
+ * Copyright 2000-2022 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import jetbrains.buildServer.agent.AgentRunningBuild
 import jetbrains.buildServer.agent.ServerProvidedProperties
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleConstants
 import jetbrains.buildServer.util.FileUtil
-import org.apache.tika.Tika
 import java.io.File
 import java.lang.reflect.Method
 import java.net.URLConnection
@@ -79,11 +78,6 @@ object GoogleFileUtils {
             }
         }
 
-        try {
-            return tikaDefaultContext.detect(file)
-        } catch (ignored: Exception) {
-        }
-
         return DEFAULT_CONTENT_TYPE
     }
 
@@ -107,7 +101,6 @@ object GoogleFileUtils {
         return null
     }
 
-    private val tikaDefaultContext = Tika()
     private const val SLASH = '/'
     private const val DEFAULT_CONTENT_TYPE = "application/octet-stream"
     private val probeContentTypeMethod: Method? = getProbeContentTypeMethod()
