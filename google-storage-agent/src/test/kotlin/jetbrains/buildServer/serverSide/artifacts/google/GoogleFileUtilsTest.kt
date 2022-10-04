@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2021 JetBrains s.r.o.
+ * Copyright 2000-2022 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,17 +26,21 @@ class GoogleFileUtilsTest {
     @DataProvider
     fun getContentTypeData(): Array<Array<Any?>> {
         return arrayOf(
-            arrayOf("file.css", "text/css"),
+            arrayOf("file.appx", "application/octet-stream"),
             arrayOf("file.zip", "application/zip"),
             arrayOf("file.txt", "text/plain"),
             arrayOf("file.jpg", "image/jpeg"),
+            arrayOf("file.css", "text/css"),
             arrayOf("file.bin", "application/octet-stream")
         )
     }
 
     @Test(dataProvider = "getContentTypeData")
     fun getContentTypeTest(fileName: String, expectedType: String) {
-        Assert.assertEquals(GoogleFileUtils.getContentType(getResourceAsFile("/GoogleFileUtilsTest/$fileName")), expectedType)
+        Assert.assertEquals(
+            GoogleFileUtils.getContentType(getResourceAsFile("/GoogleFileUtilsTest/$fileName")),
+            expectedType
+        )
     }
 
     private fun getResourceAsFile(path: String): File =
