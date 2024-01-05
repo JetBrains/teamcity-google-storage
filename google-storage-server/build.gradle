@@ -15,7 +15,7 @@
  */
 
 plugins {
-    id 'com.github.rodm.teamcity-server' version "1.4.1"
+    id 'com.github.rodm.teamcity-server' version "1.5.2"
 }
 
 teamcity {
@@ -34,8 +34,8 @@ dependencies {
     agent project(path: ':google-storage-agent', configuration: 'plugin')
 }
 
-serverPlugin.version = null
-serverPlugin.baseName = projectIds.artifact
+serverPlugin.archiveVersion.set(null)
+serverPlugin.archiveBaseName.set(projectIds.artifact.toString())
 
 compileKotlin {
     sourceCompatibility = JavaVersion.VERSION_1_8
