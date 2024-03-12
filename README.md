@@ -32,6 +32,7 @@ To configure Google Cloud Storage for TeamCity artifacts, perform the following:
 1. Select `Google Storage` as the storage type.
 2. Specify credentials and bucket name.
 3. Save your settings.
+4. (optional) configure configuration property storage.google.path.prefix to customize the destination location
 
 The configured Google Cloud Storage will appear on the Artifacts storage page. Make it active using the corresponding link.
 Now the artifacts of this project, its subprojects, and build configurations will be stored in the configured storage.
