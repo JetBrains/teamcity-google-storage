@@ -7,9 +7,11 @@ import com.google.cloud.storage.HttpMethod
 import com.google.cloud.storage.Storage
 import com.google.common.cache.CacheBuilder
 import com.intellij.openapi.diagnostic.Logger
+import jetbrains.buildServer.serverSide.IOGuard
 import jetbrains.buildServer.serverSide.TeamCityProperties
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleConstants
 import jetbrains.buildServer.serverSide.artifacts.google.GoogleUtils
+import jetbrains.buildServer.util.FuncThrow
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -31,7 +33,7 @@ class GoogleSignedUrlProviderImpl : GoogleSignedUrlProvider {
         parameters: Map<String, String>
     ): Pair<String, Int> {
         val lifeTime = urlLifetimeSec
-        val resolver = {
+        val resolver = { IOGuard.allowNetworkCall(FuncThrow {
             val bucket = GoogleUtils.getStorageBucket(parameters)
             val blobInfo = BlobInfo.newBuilder(bucket, path)
             val urlOptions = arrayListOf<Storage.SignUrlOption>(
@@ -58,7 +60,7 @@ class GoogleSignedUrlProviderImpl : GoogleSignedUrlProvider {
                     LOG.debug("signedURL: $it")
                     LOG.debug("contentType: ${parameters["contentType"]}")
                 }
-        }
+        })}
 
         if (httpMethod == HttpMethod.GET && TeamCityProperties.getBoolean(GoogleConstants.SIGNED_URL_GET_CACHE_ENABLED)) {
             return myLinksCache.get(getIdentity(parameters, path), resolver) to lifeTime
