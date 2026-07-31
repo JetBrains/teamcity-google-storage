@@ -42,7 +42,8 @@ class GoogleArtifactsPublisher(
 
     override fun publishFiles(filePathMap: Map<File, String>): Int {
         val filesToPublish = filePathMap.entries.filter {
-            !it.value.startsWith(ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR)
+            it.value != ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR &&
+            !it.value.startsWith(ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR + "/")
         }.associateTo(hashMapOf()) { entry -> entry.toPair() }
 
         if (filesToPublish.isNotEmpty()) {
