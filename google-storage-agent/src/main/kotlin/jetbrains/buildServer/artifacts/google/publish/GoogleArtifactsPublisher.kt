@@ -42,8 +42,7 @@ class GoogleArtifactsPublisher(
 
     override fun publishFiles(filePathMap: Map<File, String>): Int {
         val filesToPublish = filePathMap.entries.filter {
-            it.value != ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR &&
-            !it.value.startsWith(ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR + "/")
+            !isInternalTeamCityArtifactsPath(it.value)
         }.associateTo(hashMapOf()) { entry -> entry.toPair() }
 
         if (filesToPublish.isNotEmpty()) {
@@ -115,4 +114,9 @@ class GoogleArtifactsPublisher(
         private val LOG = Logger.getInstance(GoogleArtifactsPublisher::class.java.name)
         private const val ERROR_PUBLISHING_ARTIFACTS_LIST = "Error publishing artifacts list"
     }
+}
+
+internal fun isInternalTeamCityArtifactsPath(path: String): Boolean {
+    val artifactsDir = ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR
+    return path == artifactsDir || path.startsWith("$artifactsDir/") || path.startsWith("$artifactsDir\\")
 }
